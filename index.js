@@ -1,28 +1,22 @@
-//username,password
-//orgs
-//boards
-//issues
-const express = require('express')
+const express = require('express');
+const path = require('path');
+
+// Serve static files from "public" folder
 const authMiddleware = require('./middleware')
 const jwt = require('jsonwebtoken')
 
-let USER_ID = 0
-let ORG_ID = 0
-let BOARD_ID = 0
-let  ISSUE_ID = 0
-let STATUS = ["up next", "in progress", "done"]
 
-const USERS =[]
-const ORGANIZATIONS =[]
-const BOARDS =[]
-const ISSUES =[]
 
 const app = express()
+app.listen(3000,()=>{
+    console.log('server is running on port 3000');
+    console.log('http://localhost:3000');
+})
 app.use(express.json())
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.post("/health",authMiddleware, (req,res)=>{
-    const userId = req.userId;
-    console.log(userId)
+    
     res.status(200).json({
         message: "Server is healthy"
     })
@@ -526,6 +520,6 @@ app.delete('/delete-member', authMiddleware, (req, res) => {
 
 })
 
-app.listen(3000,()=>{
-    console.log('server is running on port 3000')
-})
+app.get('/', ( res) => {
+    res.sendFile(__dirname + '/public/index.html');
+});

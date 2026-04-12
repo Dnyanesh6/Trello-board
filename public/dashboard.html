@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trello Board - Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f5f7; min-height: 100vh; }
+
+        .navbar { background: #0079bf; padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .navbar h1 { color: #fff; font-size: 20px; font-weight: 700; }
+        .navbar .right { display: flex; align-items: center; gap: 14px; }
+        .navbar .username { color: rgba(255,255,255,0.9); font-size: 14px; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 4px; }
+        .navbar button { background: rgba(255,255,255,0.2); color: #fff; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+        .navbar button:hover { background: rgba(255,255,255,0.3); }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .section-header h2 { font-size: 18px; color: #172b4d; }
+        .btn-create { background: #0079bf; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; }
+        .btn-create:hover { background: #026aa7; }
+
+        .org-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+        .org-card { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); cursor: pointer; transition: box-shadow 0.2s, transform 0.15s; border-left: 4px solid #0079bf; }
+        .org-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.15); transform: translateY(-2px); }
+        .org-card h3 { font-size: 16px; color: #172b4d; margin-bottom: 6px; }
+        .org-card p { font-size: 13px; color: #5e6c84; margin-bottom: 10px; }
+        .org-card .meta { display: flex; gap: 12px; font-size: 12px; color: #5e6c84; }
+        .org-card .meta span { background: #f4f5f7; padding: 2px 8px; border-radius: 10px; }
+
+        .empty { text-align: center; padding: 60px 20px; color: #5e6c84; }
+        .empty .icon { font-size: 48px; margin-bottom: 12px; }
+        .empty p { font-size: 15px; }
+
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: #fff; border-radius: 8px; padding: 28px; width: 440px; max-width: 90%; }
+        .modal h3 { margin-bottom: 20px; color: #172b4d; font-size: 18px; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 600; color: #5e6c84; margin-bottom: 4px; text-transform: uppercase; }
+        .modal input, .modal textarea { width: 100%; padding: 10px; border: 2px solid #dfe1e6; border-radius: 4px; font-size: 14px; font-family: inherit; }
+        .modal input:focus, .modal textarea:focus { border-color: #0079bf; outline: none; }
+        .modal textarea { min-height: 80px; resize: vertical; }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+        .modal-actions button { padding: 8px 18px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; }
+        .btn-primary { background: #0079bf; color: #fff; }
+        .btn-primary:hover { background: #026aa7; }
+        .btn-cancel { background: #f4f5f7; color: #172b4d; }
+        .error { background: #ffebe6; color: #bf2600; padding: 8px 12px; border-radius: 4px; font-size: 13px; margin-bottom: 12px; display: none; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h1>🗂 Trello Board</h1>
+        <div class="right">
+            <span class="username" id="usernameDisplay"></span>
+            <button onclick="logout()">Logout</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="section-header">
+            <h2>Your Organizations</h2>
+            <button class="btn-create" onclick="showModal()">+ Create Organization</button>
+        </div>
+        <div class="org-grid" id="orgGrid"></div>
+        <div class="empty" id="emptyState" style="display:none;">
+            <div class="icon">🏢</div>
+            <p>No organizations yet. Create one to get started!</p>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)hideModal()">
+        <div class="modal">
+            <h3>Create Organization</h3>
+            <div class="error" id="errorMsg"></div>
+            <div class="form-group">
+                <label>Organization Name</label>
+                <input type="text" id="orgName" placeholder="e.g. My Team">
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="orgDesc" placeholder="What is this organization about?"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="hideModal()">Cancel</button>
+                <button class="btn-primary" onclick="createOrg()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = '';
+        const token = localStorage.getItem('token');
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+        if (!token || !currentUser) window.location.href = 'login.html';
+
+        document.getElementById('usernameDisplay').textContent = currentUser.username;
+
+        function api(method, path, body) {
+            const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token } };
+            if (body) opts.body = JSON.stringify(body);
+            return fetch(API + path, opts).then(r => r.json().then(d => ({ ok: r.ok, data: d })));
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('currentUser');
+            window.location.href = 'login.html';
+        }
+
+        async function loadOrgs() {
+            const res = await api('GET', '/organizations');
+            if (!res.ok) return;
+            const grid = document.getElementById('orgGrid');
+            const orgs = res.data.organizations;
+            grid.innerHTML = '';
+
+            if (orgs.length === 0) {
+                document.getElementById('emptyState').style.display = 'block';
+                return;
+            }
+            document.getElementById('emptyState').style.display = 'none';
+
+            orgs.forEach(org => {
+                const card = document.createElement('div');
+                card.className = 'org-card';
+                card.innerHTML = `
+                    <h3>${org.name}</h3>
+                    <p>${org.description}</p>
+                    <div class="meta">
+                        <span>👤 ${org.admin === currentUser.id ? 'Admin' : 'Member'}</span>
+                        <span>👥 ${org.members.length} members</span>
+                    </div>`;
+                card.onclick = () => {
+                    localStorage.setItem('selectedOrg', JSON.stringify(org));
+                    window.location.href = 'organization.html';
+                };
+                grid.appendChild(card);
+            });
+        }
+
+        function showModal() { document.getElementById('modalOverlay').classList.add('show'); }
+        function hideModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+
+        async function createOrg() {
+            const orgName = document.getElementById('orgName').value.trim();
+            const description = document.getElementById('orgDesc').value.trim();
+            if (!orgName || !description) {
+                document.getElementById('errorMsg').textContent = 'Please fill in all fields.';
+                document.getElementById('errorMsg').style.display = 'block';
+                return;
+            }
+            const res = await api('POST', '/create-org', { orgName, description });
+            if (!res.ok) return alert(res.data.message);
+            hideModal();
+            document.getElementById('orgName').value = '';
+            document.getElementById('orgDesc').value = '';
+            loadOrgs();
+        }
+
+        loadOrgs();
+    </script>
+</body>
+</html>
