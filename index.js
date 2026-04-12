@@ -3,16 +3,19 @@
 // const BOARDS = [];
 // const ISSUES = [];
 // const STATUS = ["To Do", "In Progress", "Done"];
-const express = require('express');
-const path = require('path');
+import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Serve static files from "public" folder
-const authMiddleware = require('./middleware')
-const jwt = require('jsonwebtoken')
-const dotenv = require('dotenv');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+import dotenv from 'dotenv';
+import { User, Organization, Board, Issue } from './models.js';
+import mongoose from 'mongoose';
+import jwt from 'jsonwebtoken';
+import { authMiddleware } from './middleware.js';
+
 dotenv.config();
-
-const mongoose = require('mongoose');
 
 const connection = async () => {
     try {
@@ -43,8 +46,7 @@ app.post("/health",authMiddleware, (req,res)=>{
 })
 
 //CREATE
-;
-app.post('/signup', (req, res) => {
+app.post('/signup', async (req, res) => {
     const {username, password} = req.body;
 
     if(!username || !password) {
@@ -54,28 +56,30 @@ app.post('/signup', (req, res) => {
     return;
     }
 
-    const userExist = USERS.find(user => user.username === username);
+    const userExist = await User.findOne({
+        username: username
+    })
     if (userExist) {
         res.status(401).json({
             message:"User already exists with same username"
         })
     }
 
-    const newUser = USERS.push({
-        id: ++USER_ID,
-        username:username,
-        password:password
+    const newUser =await User.create({
+        username: username,
+        password: password
     })
 
-    console.log(USERS)
+    console.log(newUser);
 
     res.status(201).json({
         message:"User Created Successfully",
-        userId: newUser
+        userId: newUser._id,
+        username: newUser.username
     })
 })   
 
-app.post('/signin', (req, res) => {
+app.post('/signin', async (req, res) => {
     const {username, password} = req.body;
 
     if(!username ||! password){
@@ -85,8 +89,11 @@ app.post('/signin', (req, res) => {
         return;
     }
 
-    const user = USERS.find(user => user.username === username && user.password === password);
-    const userId = user.id;
+    const user = await User.findOne({
+        username: username,
+        password: password
+    })
+    const userId = user._id;
     if(!user){
         res.status(404).json({
             message:"User not found"
@@ -95,12 +102,14 @@ app.post('/signin', (req, res) => {
     }
 
     const token = jwt.sign({username: user.username, userId: userId}, 
-        "fklasjdknkjlansdxcjknvjklsahfdughadsjklfnvnsludfthaiosropwqjfdnvckjbljvfhnvnbb;ksxkdjfaoisjdfknjakscvnjsdfhgapxcznmvlknjjkszchlxllvnjsdgluhsdfhgujdfjkvbnccsjkbvnjznxcvjkznhxucjfjkaznlsdjx;kcbnvljzbfgasiurpserthugjsdfgvjsdngvjnbsdg")
+        process.env.JWT_SECRET_KEY,
+        {expiresIn: '1h'}
+    )
 
     res.status(200).json({
         message:"User signed in successfully",
         user:{
-            id: user.id,
+            id: user._id,
             username: user.username,
             token: token
         }
@@ -110,7 +119,7 @@ app.post('/signin', (req, res) => {
 
 //AUTHENTICATED-MIDDLEWARE
 //onboarding route
-app.post('/create-org', authMiddleware, (req, res) => {
+app.post('/create-org', authMiddleware, async (req, res) => {
     const userId = req.userId;
 
     const {orgName, description} = req.body;
@@ -121,25 +130,29 @@ app.post('/create-org', authMiddleware, (req, res) => {
     return;
     }
 
-    const newOrg = {
-        id: ++ORG_ID,
-        name: orgName,
-        description: description,
-        admin:userId,
-        members:[]
+    const orgExist = await Organization.findOne({
+        name: orgName
+    })
+
+    if(orgExist){
+        res.status(401).json({
+            message:"Organization already exists"
+        })
+        return;
     }
 
-    ORGANIZATIONS.push(newOrg);
+    const newOrg = await Organization.create({
+        name: orgName,
+        description: description,
+        admin: userId,
+        members: []
+    }); 
 
     console.log("newOrg", newOrg);
     res.status(200).json({
         message:"Organization created successfully",
         org:{
-            id: newOrg.id,
-            name: newOrg.name,
-            description: newOrg.description,
-            admin: newOrg.admin,
-            members: newOrg.members
+            id: newOrg._id,
         }
     })
 });

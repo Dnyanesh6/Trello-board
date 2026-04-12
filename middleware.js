@@ -1,18 +1,26 @@
-const jwt = require('jsonwebtoken')
-function autMiddleware(req,res,next){
-    const token = req.headers.token;
+import jwt from 'jsonwebtoken';
 
-    const decoded = jwt.verify(token, "fklasjdknkjlansdxcjknvjklsahfdughadsjklfnvnsludfthaiosropwqjfdnvckjbljvfhnvnbb;ksxkdjfaoisjdfknjakscvnjsdfhgapxcznmvlknjjkszchlxllvnjsdgluhsdfhgujdfjkvbnccsjkbvnjznxcvjkznhxucjfjkaznlsdjx;kcbnvljzbfgasiurpserthugjsdfgvjsdngvjnbsdg");
-    const userId = decoded.userId;
-    if(decoded){
-        req.userId = userId;
-        next();
-    }else{
-        res.status(401).json({
+function authMiddleware(req, res, next) {
+    try {
+        const token = req.headers.token;
+
+        if (!token) {
+            return res.status(401).json({
+                message: 'No token provided'
+            });
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+
+        req.userId = decoded.userId;
+
+        return next(); // ✅ ONLY ONE next()
+
+    } catch (err) {
+        return res.status(401).json({
             message: 'Unauthorized'
         });
     }
-    next();
 }
 
-module.exports = autMiddleware;
+export { authMiddleware };

@@ -6,44 +6,29 @@ const userSchema = new mongoose.Schema({
 });
 
 const organizationSchema = new mongoose.Schema({
-    name:{
-        type: String,
-        required: true,
-    },
-    description: {
-        type: String,
-        required: true,
-    },
+    name: { type: String, required: true },
+    description: { type: String, required: true },
     admin: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
     },
-    members:[{
+    members: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
     }]
 });
 
 const boardsSchema = new mongoose.Schema({
-    name:{
-        type: String,
-        required: true,
-    },
-    orgId:{
+    name: { type: String, required: true },
+    orgId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Organization',
     }
 });
 
 const issueSchema = new mongoose.Schema({
-    title: {
-        type: String,
-        required: true,
-    },
-    description: {
-        type: String,
-        required: true,
-    },
+    title: { type: String, required: true },
+    description: { type: String, required: true },
     status: {
         type: String,
         enum: ['To Do', 'In Progress', 'Done'],
