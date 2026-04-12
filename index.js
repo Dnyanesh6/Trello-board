@@ -1,11 +1,31 @@
+// const USERS = [];
+// const ORGANIZATIONS = [];
+// const BOARDS = [];
+// const ISSUES = [];
+// const STATUS = ["To Do", "In Progress", "Done"];
 const express = require('express');
 const path = require('path');
 
 // Serve static files from "public" folder
 const authMiddleware = require('./middleware')
 const jwt = require('jsonwebtoken')
+const dotenv = require('dotenv');
+dotenv.config();
 
+const mongoose = require('mongoose');
 
+const connection = async () => {
+    try {
+        await mongoose.connect(process.env.MONGO_URI, {
+            dbName: process.env.DB_NAME,
+        });
+        console.log("Connected to MongoDB");
+    } catch (err) {
+        console.error("Failed to connect to MongoDB", err);
+    }
+};
+
+connection();
 
 const app = express()
 app.listen(3000,()=>{
