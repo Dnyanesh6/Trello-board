@@ -24,7 +24,7 @@ const boardsSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Organization',
     }
-});
+}); 
 
 const issueSchema = new mongoose.Schema({
     title: { type: String, required: true },

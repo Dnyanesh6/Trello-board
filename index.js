@@ -102,7 +102,7 @@ app.post('/signin', async (req, res) => {
     }
 
     const token = jwt.sign({username: user.username, userId: userId}, 
-        process.env.JWT_SECRET_KEY,
+        process.env.JWT_SECRET,
         {expiresIn: '1h'}
     )
 
@@ -158,7 +158,7 @@ app.post('/create-org', authMiddleware, async (req, res) => {
 });
 
 //creating a board route
-app.post('/boards', authMiddleware, (req, res) => {
+app.post('/boards', authMiddleware, async (req, res) => {
     const userId = req.userId;
     const orgId = req.body.orgId;
 
@@ -170,7 +170,10 @@ app.post('/boards', authMiddleware, (req, res) => {
     return;
     }
 
-    const org = ORGANIZATIONS.find(org => org.id === orgId);
+    const org = await Organization.findOne({
+        _id: orgId
+    });
+
     if(!org){
         res.status(404).json({
             message:"Organization not found"
@@ -178,26 +181,24 @@ app.post('/boards', authMiddleware, (req, res) => {
     return;
     }
 
-    if (userId !== org.admin) {
+    if (!org.admin.equals(userId)) {
         res.status(403).json({
             message:"Only the organization admin can create boards"
         })
         return;
     }
 
-    const newBoard = {
-        id: ++BOARD_ID,
+    const newBoard = await Board.create({
         name: boardName,
-        orgId: orgId,
-    }
-    BOARDS.push(newBoard)
+        orgId: orgId
+    })
 
     console.log(newBoard);
 
     res.status(200).json({
         message:"Board created successfully",
         board:{
-            id: newBoard.id,
+            id: newBoard._id,
             name: newBoard.name,
             orgId: newBoard.orgId
         }
@@ -205,7 +206,7 @@ app.post('/boards', authMiddleware, (req, res) => {
 })
 
 //adds an issue to the board
-app.post('/issues', authMiddleware, (req, res) => {
+app.post('/issues', authMiddleware, async (req, res) => {
     const userId = req.userId;
 
     const boardId = req.body.boardId;
@@ -218,37 +219,41 @@ app.post('/issues', authMiddleware, (req, res) => {
     return;
     }
 
-    const board = BOARDS.find(board => board.id === boardId);
+    const board =await Board.findOne({
+        _id: boardId
+    })
+
     if(!board){
         res.status(404).json({
             message:"Board not found"
         })
     return;
     }
+    
+    const org = await Organization.findOne({
+        _id: board.orgId
+    })
 
-    if(userId !== ORGANIZATIONS.find(org => org.id === board.orgId).admin){
+
+    if(!org.admin.equals(userId) && !org.members.includes(userId)){
         res.status(403).json({
             message:"Only the organization admin can create issues"
         })
         return;
     }
 
-    const newIssue = {
-        id: ++ISSUE_ID,
+    const newIssue = await Issue.create({
         title: title,
         description: description,
         boardId: boardId,
-        status: STATUS[0]
-    }
-
-    ISSUES.push(newIssue)
+    })
 
     console.log(newIssue);
 
     res.status(200).json({
         message:"Issue created successfully",
         issue:{
-            id: newIssue.id,
+            id: newIssue._id,
             title: newIssue.title,
             description: newIssue.description,
             boardId: newIssue.boardId,
@@ -258,7 +263,7 @@ app.post('/issues', authMiddleware, (req, res) => {
 })
 
 //adding memeber to the organization
-app.post('/addUserToOrganization',authMiddleware, (req, res) => {
+app.post('/addUserToOrganization',authMiddleware, async (req, res) => {
     const userId = req.userId;
 
     const username = req.body.username;
@@ -271,7 +276,10 @@ app.post('/addUserToOrganization',authMiddleware, (req, res) => {
     return;
     }
 
-    const org = ORGANIZATIONS.find(org => org.id === orgId);
+    const org = await Organization.findOne({
+        _id: orgId
+    })
+
     if(!org){
         res.status(404).json({
             message:"Organization not found"
@@ -279,49 +287,60 @@ app.post('/addUserToOrganization',authMiddleware, (req, res) => {
     return;
     }
 
-    if (userId !== org.admin) {
+    if (!org.admin.equals(userId)) {
         res.status(403).json({
             message:"Only the organization admin can add members to the organization"
         })
         return;
     }
 
-    const user = USERS.find(user => user.username === username);
+    const user = await User.findOne({
+        username: username
+    });
     if(!user){
         res.status(404).json({
-            message:"User not found"
+            message:"User not found or User does not exist"
         })
     return;
     }
 
-    if (org.members.includes(user.id)) {
+    if (org.members.includes(user._id)) {
         res.status(400).json({
             message:"User is already a member of the organization"
         })
         return;
     }
 
-    org.members.push(user.id);
+    const updatedOrg = await Organization.findByIdAndUpdate(
+        orgId,
+        {$push: {members: user._id}},
+        {new: true}
+    )
 
-    console.log(org);
+    console.log(updatedOrg);
 
     res.status(200).json({
         message:"User added to the organization successfully",
         organization:{
-            id: org.id,
-            name: org.name,
-            description: org.description,
-            admin: org.admin,
-            members: org.members
+            id: updatedOrg._id,
+            name: updatedOrg.name,
+            description: updatedOrg.description,
+            admin: updatedOrg.admin,
+            members: updatedOrg.members
         }
     })
 })
 
 //READ
-app.get('/organizations',authMiddleware, (req, res) => {
+app.get('/organizations',authMiddleware,async (req, res) => {
     const userId = req.userId;
 
-    const userOrgs = ORGANIZATIONS.filter(org => org.admin === userId || org.members.includes(userId));
+    const userOrgs = await Organization.find({
+        $or: [
+            {admin: userId},
+            {members: userId}
+        ]
+    })
 
     res.status(200).json({
         organizations: userOrgs
