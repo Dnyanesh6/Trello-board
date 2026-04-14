@@ -94,76 +94,62 @@
     </div>
 
     <script>
-        const API = '';
-        const token = localStorage.getItem('token');
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-        if (!token || !currentUser) window.location.href = 'login.html';
-
-        document.getElementById('usernameDisplay').textContent = currentUser.username;
-
-        function api(method, path, body) {
-            const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token } };
-            if (body) opts.body = JSON.stringify(body);
-            return fetch(API + path, opts).then(r => r.json().then(d => ({ ok: r.ok, data: d })));
-        }
-
         function logout() {
             localStorage.removeItem('token');
-            localStorage.removeItem('currentUser');
-            window.location.href = 'login.html';
+            window.location.href = '/login.html';
         }
 
-        async function loadOrgs() {
-            const res = await api('GET', '/organizations');
-            if (!res.ok) return;
-            const grid = document.getElementById('orgGrid');
-            const orgs = res.data.organizations;
-            grid.innerHTML = '';
-
-            if (orgs.length === 0) {
-                document.getElementById('emptyState').style.display = 'block';
+        function getUsername(){
+            const token = localStorage.getItem('token');
+            if(!token){
+                logout();
                 return;
             }
-            document.getElementById('emptyState').style.display = 'none';
 
-            orgs.forEach(org => {
-                const card = document.createElement('div');
-                card.className = 'org-card';
-                card.innerHTML = `
-                    <h3>${org.name}</h3>
-                    <p>${org.description}</p>
-                    <div class="meta">
-                        <span>👤 ${org.admin === currentUser.id ? 'Admin' : 'Member'}</span>
-                        <span>👥 ${org.members.length} members</span>
-                    </div>`;
-                card.onclick = () => {
-                    localStorage.setItem('selectedOrg', JSON.stringify(org));
-                    window.location.href = 'organization.html';
-                };
-                grid.appendChild(card);
-            });
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            return payload.username || 'User';
         }
 
-        function showModal() { document.getElementById('modalOverlay').classList.add('show'); }
-        function hideModal() { document.getElementById('modalOverlay').classList.remove('show'); }
-
-        async function createOrg() {
-            const orgName = document.getElementById('orgName').value.trim();
-            const description = document.getElementById('orgDesc').value.trim();
-            if (!orgName || !description) {
-                document.getElementById('errorMsg').textContent = 'Please fill in all fields.';
-                document.getElementById('errorMsg').style.display = 'block';
-                return;
-            }
-            const res = await api('POST', '/create-org', { orgName, description });
-            if (!res.ok) return alert(res.data.message);
-            hideModal();
+        function showModal() {
+            document.getElementById('modalOverlay').classList.add('show');
+            document.getElementById('errorMsg').style.display = 'none';
             document.getElementById('orgName').value = '';
             document.getElementById('orgDesc').value = '';
-            loadOrgs();
         }
 
-        loadOrgs();
+        function hideModal() {
+            document.getElementById('modalOverlay').classList.remove('show');
+        }
+
+        async function createOrg(){
+            const orgName = document.getElementById('orgName').value;
+            const orgDesc = document.getElementById('orgDesc').value;
+
+            if(!orgName || orgDesc.length == 0){
+                alert('Organization name and description are required');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('token');
+                const response =await fetch('http://localhost:3000/create-org',{
+                    method:'POST',
+                    headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+                    body:JSON.stringify({orgName:orgName, description:orgDesc})
+                })
+
+                const data = await response.json();
+
+                if(response.ok){
+                    hideModal();
+                    loadOrganizations();
+                } else {
+                    alert(data.message || 'Failed to create organization');
+                }
+            } catch (error) {
+                alert('Failed to create organization');
+            }
+        }
     </script>
 </body>
 </html>
