@@ -87,13 +87,13 @@
 <!-- Auth Screen -->
 <div class="auth-container" id="authScreen">
     <div class="auth-box">
-        <h2 id="authTitle">Sign In</h2>
+        <h2 id="authTitle">Sign Up</h2>
         <input type="text" id="authUsername" placeholder="Username">
         <input type="password" id="authPassword" placeholder="Password">
         <button id="authBtn" onclick="handleAuth()">Sign In</button>
         <div class="toggle">
-            <span id="authToggleText">Don't have an account?</span>
-            <a id="authToggleLink" onclick="toggleAuthMode()">Sign Up</a>
+            <span id="authToggleText">Already have a account</span>
+            <a id="authToggleLink" onclick="goToLogin()">Login</a>
         </div>
     </div>
 </div>
@@ -137,239 +137,54 @@
         <h3 id="modalTitle"></h3>
         <div id="modalBody"></div>
         <div class="modal-actions">
-            <button class="btn-cancel" onclick="hideModal()">Cancel</button>
+            <button class="btn-cancel" onclick="goToLogin()">Cancel</button>
             <button class="btn-primary" id="modalSubmit">Create</button>
         </div>
     </div>
 </div>
 
 <script>
-const API = ''; // e.g. 'http://localhost:3000' — leave empty if served from same origin
+    console.log("Trello Board App - Frontend");
 
-let token = localStorage.getItem('token') || '';
-let currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-let isSignUp = false;
-let selectedOrg = null;
-let selectedBoard = null;
+    async function handleAuth() {
+    const username = document.getElementById('authUsername').value;
+    const password = document.getElementById('authPassword').value;
 
-// Init
-if (token && currentUser) showApp();
-
-function api(method, path, body) {
-    const opts = { method, headers: { 'Content-Type': 'application/json' } };
-    if (token) opts.headers['Authorization'] = 'Bearer ' + token;
-    if (body) opts.body = JSON.stringify(body);
-    return fetch(API + path, opts).then(r => r.json().then(d => ({ ok: r.ok, status: r.status, data: d })));
-}
-
-function toggleAuthMode() {
-    isSignUp = !isSignUp;
-    document.getElementById('authTitle').textContent = isSignUp ? 'Sign Up' : 'Sign In';
-    document.getElementById('authBtn').textContent = isSignUp ? 'Sign Up' : 'Sign In';
-    document.getElementById('authToggleText').textContent = isSignUp ? 'Already have an account?' : "Don't have an account?";
-    document.getElementById('authToggleLink').textContent = isSignUp ? 'Sign In' : 'Sign Up';
-}
-
-async function handleAuth() {
-    const username = document.getElementById('authUsername').value.trim();
-    const password = document.getElementById('authPassword').value.trim();
-    if (!username || !password) return alert('Please fill in all fields');
-
-    const endpoint = isSignUp ? '/signup' : '/signin';
-    const res = await api('POST', endpoint, { username, password });
-
-    if (!res.ok) return alert(res.data.message || 'Error');
-
-    if (isSignUp) {
-        alert('Account created! Please sign in.');
-        toggleAuthMode();
-    } else {
-        token = res.data.user.token;
-        currentUser = { id: res.data.user.id, username: res.data.user.username };
-        localStorage.setItem('token', token);
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        showApp();
+    // ✅ basic validation
+    if (!username || !password) {
+        alert("Please fill all fields");
+        return;
     }
-}
 
-function showApp() {
-    document.getElementById('authScreen').style.display = 'none';
-    document.getElementById('appScreen').style.display = 'flex';
-    document.getElementById('usernameDisplay').textContent = currentUser.username;
-    loadOrgs();
-}
-
-function logout() {
-    token = '';
-    currentUser = null;
-    selectedOrg = null;
-    selectedBoard = null;
-    localStorage.removeItem('token');
-    localStorage.removeItem('currentUser');
-    document.getElementById('authScreen').style.display = 'flex';
-    document.getElementById('appScreen').style.display = 'none';
-}
-
-// Organizations
-async function loadOrgs() {
-    const res = await api('GET', '/organizations');
-    if (!res.ok) return;
-    const list = document.getElementById('orgList');
-    list.innerHTML = '';
-    res.data.organizations.forEach(org => {
-        const div = document.createElement('div');
-        div.className = 'item' + (selectedOrg && selectedOrg.id === org.id ? ' active' : '');
-        div.innerHTML = `<span>${org.name}</span><span class="badge">${org.members.length}m</span>`;
-        div.onclick = () => selectOrg(org);
-        list.appendChild(div);
-    });
-}
-
-function selectOrg(org) {
-    selectedOrg = org;
-    selectedBoard = null;
-    document.getElementById('boardSection').style.display = 'block';
-    document.getElementById('memberSection').style.display = 'block';
-    loadOrgs();
-    loadBoards();
-    loadMembers();
-    document.getElementById('content').innerHTML = '<div class="empty-state">Select a board to view issues.</div>';
-}
-
-// Boards
-async function loadBoards() {
-    const res = await api('GET', '/boards', { orgId: selectedOrg.id });
-    if (!res.ok) return;
-    const list = document.getElementById('boardList');
-    list.innerHTML = '';
-    res.data.boards.forEach(board => {
-        const div = document.createElement('div');
-        div.className = 'item' + (selectedBoard && selectedBoard.id === board.id ? ' active' : '');
-        div.textContent = board.name;
-        div.onclick = () => selectBoard(board);
-        list.appendChild(div);
-    });
-}
-
-function selectBoard(board) {
-    selectedBoard = board;
-    loadBoards();
-    loadIssues();
-}
-
-// Members
-async function loadMembers() {
-    const res = await api('GET', '/members', { orgId: selectedOrg.id });
-    if (!res.ok) return;
-    const list = document.getElementById('memberList');
-    list.innerHTML = '';
-    res.data.members.forEach(m => {
-        const div = document.createElement('div');
-        div.className = 'member-item';
-        div.innerHTML = `<span>${m.username}</span><button onclick="removeMember('${m.username}')">Remove</button>`;
-        list.appendChild(div);
-    });
-}
-
-async function removeMember(username) {
-    if (!confirm(`Remove ${username}?`)) return;
-    await api('DELETE', '/delete-member', { username, orgId: selectedOrg.id });
-    loadMembers();
-}
-
-// Issues
-async function loadIssues() {
-    const res = await api('GET', '/issues', { boardId: selectedBoard.id });
-    if (!res.ok) return;
-
-    const statuses = ['todo', 'doing', 'done'];
-    const labels = { todo: '📋 To Do', doing: '🔨 In Progress', done: '✅ Done' };
-    const grouped = { todo: [], doing: [], done: [] };
-    res.data.issues.forEach(issue => {
-        if (grouped[issue.status]) grouped[issue.status].push(issue);
-    });
-
-    let html = `<div class="board-header"><h2>${selectedBoard.name}</h2></div><div class="columns">`;
-    statuses.forEach(status => {
-        html += `<div class="column"><div class="column-title">${labels[status]} (${grouped[status].length})</div>`;
-        grouped[status].forEach(issue => {
-            const canAdvance = status !== 'done';
-            html += `<div class="card">
-                <strong>${issue.title}</strong>
-                <div class="card-desc">${issue.description}</div>
-                <div class="card-actions">
-                    ${canAdvance ? `<button class="btn-advance" onclick="advanceIssue(${issue.id})">Advance →</button>` : ''}
-                    <button class="btn-delete" onclick="deleteIssue(${issue.id})">Delete</button>
-                </div>
-            </div>`;
+    try {
+        const response = await fetch("http://localhost:3000/signup", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ username, password })
         });
-        if (status === 'todo') {
-            html += `<button class="add-btn" style="background:#0000001a;color:#172b4d;" onclick="showModal('issue')">+ Add Issue</button>`;
+
+        const data = await response.json();
+        console.log(data);
+
+        if (response.ok) {
+
+            // ✅ redirect to login page
+            window.location.replace("login.html");
+        } else {
+            alert(data.message || "Signup failed");
         }
-        html += `</div>`;
-    });
-    html += `</div>`;
-    document.getElementById('content').innerHTML = html;
-}
 
-async function advanceIssue(issueId) {
-    await api('PUT', '/issues-update', { issueId });
-    loadIssues();
-}
-
-async function deleteIssue(issueId) {
-    if (!confirm('Delete this issue?')) return;
-    await api('DELETE', '/issues', { issueId });
-    loadIssues();
-}
-
-// Modal
-function showModal(type) {
-    const overlay = document.getElementById('modalOverlay');
-    const title = document.getElementById('modalTitle');
-    const body = document.getElementById('modalBody');
-    const submit = document.getElementById('modalSubmit');
-
-    if (type === 'org') {
-        title.textContent = 'Create Organization';
-        body.innerHTML = '<input id="m_orgName" placeholder="Organization Name"><textarea id="m_orgDesc" placeholder="Description"></textarea>';
-        submit.onclick = async () => {
-            const res = await api('POST', '/create-org', { orgName: document.getElementById('m_orgName').value, description: document.getElementById('m_orgDesc').value });
-            if (!res.ok) return alert(res.data.message);
-            hideModal(); loadOrgs();
-        };
-    } else if (type === 'board') {
-        title.textContent = 'Create Board';
-        body.innerHTML = '<input id="m_boardName" placeholder="Board Name">';
-        submit.onclick = async () => {
-            const res = await api('POST', '/boards', { boardName: document.getElementById('m_boardName').value, orgId: selectedOrg.id });
-            if (!res.ok) return alert(res.data.message);
-            hideModal(); loadBoards();
-        };
-    } else if (type === 'issue') {
-        title.textContent = 'Create Issue';
-        body.innerHTML = '<input id="m_issueTitle" placeholder="Issue Title"><textarea id="m_issueDesc" placeholder="Description"></textarea>';
-        submit.onclick = async () => {
-            const res = await api('POST', '/issues', { title: document.getElementById('m_issueTitle').value, description: document.getElementById('m_issueDesc').value, boardId: selectedBoard.id });
-            if (!res.ok) return alert(res.data.message);
-            hideModal(); loadIssues();
-        };
-    } else if (type === 'member') {
-        title.textContent = 'Add Member';
-        body.innerHTML = '<input id="m_memberName" placeholder="Username">';
-        submit.onclick = async () => {
-            const res = await api('POST', '/addUserToOrganization', { username: document.getElementById('m_memberName').value, orgId: selectedOrg.id });
-            if (!res.ok) return alert(res.data.message);
-            hideModal(); loadMembers();
-        };
+    } catch (error) {
+        console.error("Error:", error);
+        alert("Something went wrong");
     }
-    overlay.classList.add('show');
 }
 
-function hideModal(e) {
-    if (e && e.target !== document.getElementById('modalOverlay')) return;
-    document.getElementById('modalOverlay').classList.remove('show');
-}
+    function goToLogin(){
+        window.location.href = 'login.html';
+    }
 </script>
 </body>
 </html>

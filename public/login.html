@@ -24,7 +24,7 @@
 <body>
     <div class="auth-box">
         <div class="logo">🗂 Trello Board</div>
-        <h2 id="authSubtitle">Sign in to your account</h2>
+        <h2 id="authSubtitle">Login to your account</h2>
         <div class="error" id="errorMsg"></div>
         <div class="form-group">
             <label>Username</label>
@@ -34,70 +34,48 @@
             <label>Password</label>
             <input type="password" id="password" placeholder="Enter your password">
         </div>
-        <button class="btn" id="authBtn" onclick="handleAuth()">Sign In</button>
+        <button class="btn" id="authBtn" onclick="handleLogin()">Login</button>
         <div class="toggle">
             <span id="toggleText">Don't have an account?</span>
-            <a id="toggleLink" onclick="toggleMode()">Sign Up</a>
+            <a id="toggleLink" onclick="goToSignUp()">Sign Up</a>
         </div>
     </div>
 
-    <script>
-        const API = '';
-        let isSignUp = false;
+<script>
+    function goToSignUp(){
+        window.location.href = 'index.html';
+    }
 
-        // Redirect if already logged in
-        if (localStorage.getItem('token')) window.location.href = 'dashboard.html';
+    async function handleLogin(){
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
 
-        function toggleMode() {
-            isSignUp = !isSignUp;
-            document.getElementById('authBtn').textContent = isSignUp ? 'Sign Up' : 'Sign In';
-            document.getElementById('authSubtitle').textContent = isSignUp ? 'Create a new account' : 'Sign in to your account';
-            document.getElementById('toggleText').textContent = isSignUp ? 'Already have an account?' : "Don't have an account?";
-            document.getElementById('toggleLink').textContent = isSignUp ? 'Sign In' : 'Sign Up';
-            hideError();
+        if(!username || !password){
+            showError('Please fill in all fields');
+            return;
         }
 
-        function showError(msg) {
-            const el = document.getElementById('errorMsg');
-            el.textContent = msg; el.style.display = 'block';
-        }
-        function hideError() { document.getElementById('errorMsg').style.display = 'none'; }
+        try {
+            const response = await fetch('http://localhost:3000/signin',{
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
 
-        async function handleAuth() {
-            hideError();
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value.trim();
-            if (!username || !password) return showError('Please fill in all fields.');
+            const data = await response.json();
 
-            const endpoint = isSignUp ? '/signup' : '/signin';
-            try {
-                const r = await fetch(API + endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
-                const data = await r.json();
-                if (!r.ok) return showError(data.message || 'Something went wrong.');
-
-                if (isSignUp) {
-                    showError(''); // clear
-                    document.getElementById('errorMsg').style.display = 'block';
-                    document.getElementById('errorMsg').style.background = '#e3fcef';
-                    document.getElementById('errorMsg').style.color = '#006644';
-                    document.getElementById('errorMsg').textContent = 'Account created! Please sign in.';
-                    toggleMode();
-                } else {
-                    localStorage.setItem('token', data.user.token);
-                    localStorage.setItem('currentUser', JSON.stringify({ id: data.user.id, username: data.user.username }));
-                    window.location.href = 'dashboard.html';
-                }
-            } catch (e) {
-                showError('Cannot connect to server.');
+            if(response.ok){
+                alert('Login successful');
+                localStorage.setItem('token', data.user.token);  
+                localStorage.setItem('username', data.user.username);  
+                window.location.href = 'dashboard.html';
+            } else {
+                showError(data.message || 'Login failed');
             }
+        } catch (error) {
+            alert('An error occurred. Please try again later.');
         }
-
-        // Enter key support
-        document.addEventListener('keydown', e => { if (e.key === 'Enter') handleAuth(); });
-    </script>
+    }
+</script>
 </body>
 </html>
