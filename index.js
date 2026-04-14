@@ -14,6 +14,7 @@ import { User, Organization, Board, Issue } from './models.js';
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 import { authMiddleware } from './middleware.js';
+import { stat } from 'fs';
 
 dotenv.config();
 
@@ -347,7 +348,7 @@ app.get('/organizations',authMiddleware,async (req, res) => {
     });
 });
 
-app.get('/boards',authMiddleware, (req, res) => { //to be checked : saying only org members can access the boards but not using auth middleware
+app.get('/boards',authMiddleware,async (req, res) => { //to be checked : saying only org members can access the boards but not using auth middleware
     const userId = req.userId;
     const orgId = req.body.orgId;
 
@@ -358,7 +359,9 @@ app.get('/boards',authMiddleware, (req, res) => { //to be checked : saying only 
     return;
     }
 
-    const org = ORGANIZATIONS.find(org => org.id === orgId);
+    const org = await Organization.findOne({
+        _id: orgId
+    });
     if(!org){
         res.status(404).json({
             message:"Organization not found"
@@ -373,7 +376,9 @@ app.get('/boards',authMiddleware, (req, res) => { //to be checked : saying only 
     return;
     }
 
-    const userBoards = BOARDS.filter(board => board.orgId === orgId);
+    const userBoards = await Board.find({
+        orgId: orgId
+    })
 
     res.status(200).json({
         message:"Boards retrieved successfully",
@@ -381,7 +386,7 @@ app.get('/boards',authMiddleware, (req, res) => { //to be checked : saying only 
     })
 })
 
-app.get('/issues',authMiddleware, (req,res)=>{
+app.get('/issues',authMiddleware,async (req,res)=>{
     const userId = req.userId;
     const boardId = req.body.boardId;
 
@@ -392,7 +397,9 @@ app.get('/issues',authMiddleware, (req,res)=>{
     return;
     }
 
-    const board = BOARDS.find(board => board.id === boardId);
+    const board = await Board.findOne({
+        _id: boardId
+    })
     if(!board){
         res.status(404).json({
             message:"Board not found"
@@ -400,7 +407,9 @@ app.get('/issues',authMiddleware, (req,res)=>{
     return;
     }
 
-    const org = ORGANIZATIONS.find(org => org.id === board.orgId);
+    const org = await Organization.findOne({
+        _id: board.orgId
+    });
     if(userId !== org.admin && !org.members.includes(userId)){
         res.status(403).json({
             message:"Only organization members can access this resource"
@@ -408,7 +417,9 @@ app.get('/issues',authMiddleware, (req,res)=>{
     return;
     }
 
-    const boardIssues = ISSUES.filter(issue => issue.boardId === boardId);
+    const boardIssues = await Issue.find({
+        boardId: boardId
+    })
 
     res.status(200).json({
         message:"Issues retrieved successfully",
@@ -417,7 +428,7 @@ app.get('/issues',authMiddleware, (req,res)=>{
 })
 
 //list the memebers of the organizations
-app.get('/members', authMiddleware, (req,res)=>{
+app.get('/members', authMiddleware,async  (req,res)=>{
     const userId = req.userId;
 
     const orgId = req.body.orgId;
@@ -429,7 +440,9 @@ app.get('/members', authMiddleware, (req,res)=>{
     return;
     }
 
-    const org = ORGANIZATIONS.find(org => org.id === orgId);
+    const org = await Organization.findOne({
+        _id: orgId
+    });
 
     if(!org){
         res.status(404).json({
@@ -445,10 +458,9 @@ app.get('/members', authMiddleware, (req,res)=>{
     return;
     }
 
-    const members = USERS.filter(user => org.members.includes(user.id)).map(user => ({
-        id: user.id,
-        username: user.username
-    }))
+    const members = await User.find({
+        _id: { $in: org.members }
+    }).select('id username');
 
     res.status(200).json({
         message:"Members retrieved successfully",
@@ -457,42 +469,47 @@ app.get('/members', authMiddleware, (req,res)=>{
 });
 
 //UPDATE
-app.put('/issues-update',authMiddleware, (req, res) => {
+app.put('/issues-update', authMiddleware, async (req, res) => {
     const userId = req.userId;
-
     const issueId = req.body.issueId;
-    
-    const issue = ISSUES.find(issue => issue.id === issueId);
-    if(!issue){
-        res.status(404).json({
-            message:"Issue not found"
-        })
-    return;
-    }
-    
-    const board = BOARDS.find(board => board.id === issue.boardId);
-    const org = ORGANIZATIONS.find(org => org.id === board.orgId);
-    if(userId !== org.admin && !org.members.includes(userId)){
-        res.status(403).json({
-            message:"Only organization members can access this resource"
-        })
-    return;
+
+    const issue = await Issue.findOne({ _id: issueId });
+
+    if (!issue) {
+        return res.status(404).json({
+            message: "Issue not found"
+        });
     }
 
-    if(issue.status === STATUS[0]){
-        issue.status = STATUS[1];
-    }else if(issue.status === STATUS[1]){
-        issue.status = STATUS[2];
+    const board = await Board.findOne({ _id: issue.boardId });
+    const org = await Organization.findOne({ _id: board.orgId });
+
+    if (userId !== org.admin && !org.members.includes(userId)) {
+        return res.status(403).json({
+            message: "Only organization members can access this resource"
+        });
     }
+
+    // ✅ Define status flow
+    const statusFlow = ['To Do', 'In Progress', 'Done'];
+
+    let currentIndex = statusFlow.indexOf(issue.status);
+
+    if (currentIndex < statusFlow.length - 1) {
+        issue.status = statusFlow[currentIndex + 1];
+    }
+
+    // ✅ SAVE changes
+    await issue.save();
 
     res.status(200).json({
-        message:"Issue status updated successfully",
+        message: "Issue status updated successfully",
         issue: issue
-    })
+    });
 });
 
 //DELETE 
-app.delete('/issues',authMiddleware, (req, res) => {
+app.delete('/issues',authMiddleware,async (req, res) => {
     const userId = req.userId;
     const issueId = req.body.issueId;
 
@@ -503,16 +520,22 @@ app.delete('/issues',authMiddleware, (req, res) => {
     return;
     }
 
-    const issueIndex = ISSUES.findIndex(issue => issue.id === issueId);
-    if(issueIndex === -1){
+    const issue = await Issue.findOne({
+        _id: issueId
+    });
+    if(!issue){
         res.status(404).json({
             message:"Issue not found"
         })
     return;
     }
 
-    const board = BOARDS.find(board => board.id === ISSUES[issueIndex].boardId);
-    const org = ORGANIZATIONS.find(org => org.id === board.orgId);
+    const board = await Board.findOne({
+        _id: issue.boardId
+    });
+    const org = await Organization.findOne({
+        _id: board.orgId
+    });
 
     if(userId !== org.admin &&  !org.members.includes(userId)){
         res.status(403).json({
@@ -521,7 +544,7 @@ app.delete('/issues',authMiddleware, (req, res) => {
     return;
     }
 
-    ISSUES.splice(issueIndex, 1);
+    await issue.deleteOne();
 
     res.status(200).json({
         message:"Issue deleted successfully"
@@ -529,7 +552,7 @@ app.delete('/issues',authMiddleware, (req, res) => {
 });
 
 //delete or removes the member from the organization
-app.delete('/delete-member', authMiddleware, (req, res) => {
+app.put('/delete-member', authMiddleware, async (req, res) => {
     const userId = req.userId;
     const username = req.body.username;
     const orgId = req.body.orgId;
@@ -541,7 +564,9 @@ app.delete('/delete-member', authMiddleware, (req, res) => {
     return;
     }
 
-    const org = ORGANIZATIONS.find(org => org.id === orgId);
+    const org = await Organization.findOne({
+        _id: orgId
+    });
     if(!org){
         res.status(404).json({
             message:"Organization not found"
@@ -551,12 +576,16 @@ app.delete('/delete-member', authMiddleware, (req, res) => {
 
     if(userId !== org.admin && !org.members.includes(userId)){
         res.status(403).json({
-            message:"Only organization members can access this resource"
+            message:"Only organization admin can access this resource"
         })
     return;
     }
 
-    const memberIndex = org.members.findIndex(memberId => memberId === userId);
+    const memberRemoved = await User.findOne({
+        username: username
+    });
+
+    const memberIndex = org.members.indexOf(memberRemoved._id);
     if(memberIndex === -1){
         res.status(404).json({
             message:"Member not found"
@@ -565,6 +594,7 @@ app.delete('/delete-member', authMiddleware, (req, res) => {
     }
 
     org.members.splice(memberIndex, 1);
+    await org.save();
 
     res.status(200).json({
         message:"Member removed successfully"
