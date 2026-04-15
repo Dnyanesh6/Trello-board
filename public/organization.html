@@ -63,6 +63,8 @@
         .modal-actions button { padding: 8px 18px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; }
         .btn-primary { background: #0079bf; color: #fff; }
         .btn-cancel { background: #f4f5f7; color: #172b4d; }
+        #backToOrgs { background: rgba(255,255,255,0.2); color: #fff; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 13px; }
+        #backToOrgs:hover { background: rgba(255,255,255,0  .3); }
 
         @media (max-width: 768px) { .panels { grid-template-columns: 1fr; } }
     </style>
@@ -71,7 +73,7 @@
     <nav class="navbar">
         <div class="left">
             <h1 onclick="location.href='dashboard.html'">🗂 Trello Board</h1>
-            <span class="breadcrumb">/ <a href="dashboard.html">Organizations</a> / <span id="orgNameNav"></span></span>
+            <button id="backToOrgs" onclick="location.href='dashboard.html'">Back to Organizations</button>
         </div>
         <div class="right">
             <span class="username" id="usernameDisplay"></span>
@@ -113,127 +115,170 @@
             <div id="modalBody"></div>
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="hideModal()">Cancel</button>
-                <button class="btn-primary" id="modalSubmit">Create</button>
+                <button class="btn-primary" id="modalSubmit" onclick="createBoard()">Create</button>
             </div>
         </div>
     </div>
 
+
     <script>
-        const API = '';
-        const token = localStorage.getItem('token');
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
-        const org = JSON.parse(localStorage.getItem('selectedOrg') || 'null');
-        if (!token || !currentUser) window.location.href = 'login.html';
-        if (!org) window.location.href = 'dashboard.html';
-
-        document.getElementById('usernameDisplay').textContent = currentUser.username;
-        document.getElementById('orgNameNav').textContent = org.name;
-        document.getElementById('orgTitle').textContent = org.name;
-        document.getElementById('orgDescription').textContent = org.description;
-
-        function api(method, path, body) {
-            const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token } };
-            if (body) opts.body = JSON.stringify(body);
-            return fetch(API + path, opts).then(r => r.json().then(d => ({ ok: r.ok, data: d })));
-        }
-
         function logout() {
-            localStorage.clear();
-            window.location.href = 'login.html';
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
         }
 
-        async function loadBoards() {
-            const res = await api('GET', '/boards', { orgId: org.id });
-            const list = document.getElementById('boardList');
-            if (!res.ok || !res.data.boards.length) {
-                list.innerHTML = '<div class="empty-panel">No boards yet. Create one!</div>';
-                return;
-            }
-            list.innerHTML = '';
-            res.data.boards.forEach(board => {
-                const div = document.createElement('div');
-                div.className = 'board-item';
-                div.innerHTML = `<h4>${board.name}</h4><span class="arrow">→</span>`;
-                div.onclick = () => {
-                    localStorage.setItem('selectedBoard', JSON.stringify(board));
-                    window.location.href = 'board.html';
-                };
-                list.appendChild(div);
-            });
-        }
-
-        async function loadMembers() {
-            const res = await api('GET', '/members', { orgId: org.id });
-            const list = document.getElementById('memberList');
-
-            // Show admin first
-            const adminHtml = `<div class="member-item">
-                <div class="info">
-                    <div class="avatar">${currentUser.username[0].toUpperCase()}</div>
-                    <span class="name">${currentUser.username}</span>
-                    <span class="role">Admin</span>
-                </div>
-            </div>`;
-
-            if (!res.ok || !res.data.members.length) {
-                list.innerHTML = adminHtml + '<div class="empty-panel">No other members yet.</div>';
-                return;
-            }
-            let html = adminHtml;
-            res.data.members.forEach(m => {
-                html += `<div class="member-item">
-                    <div class="info">
-                        <div class="avatar">${m.username[0].toUpperCase()}</div>
-                        <span class="name">${m.username}</span>
-                        <span class="role">Member</span>
+        function showModal(type){
+            document.getElementById('modalOverlay').classList.add('show');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+            const modalSubmit = document.getElementById('modalSubmit');
+            if(type === 'board'){
+                modalTitle.textContent = 'Create New Board';
+                modalBody.innerHTML = `
+                    <div class="form-group">
+                        <label>Board Name</label>
+                        <input type="text" id="boardName" placeholder="e.g. Sprint Planning">
                     </div>
-                    <button class="btn-remove" onclick="removeMember('${m.username}')" title="Remove">✕</button>
-                </div>`;
-            });
-            list.innerHTML = html;
-        }
-
-        async function removeMember(username) {
-            if (!confirm('Remove ' + username + '?')) return;
-            await api('DELETE', '/delete-member', { username, orgId: org.id });
-            loadMembers();
-        }
-
-        function showModal(type) {
-            const overlay = document.getElementById('modalOverlay');
-            const title = document.getElementById('modalTitle');
-            const body = document.getElementById('modalBody');
-            const submit = document.getElementById('modalSubmit');
-
-            if (type === 'board') {
-                title.textContent = 'Create Board';
-                body.innerHTML = '<div class="form-group"><label>Board Name</label><input type="text" id="m_input" placeholder="e.g. Sprint 1"></div>';
-                submit.onclick = async () => {
-                    const name = document.getElementById('m_input').value.trim();
-                    if (!name) return;
-                    const res = await api('POST', '/boards', { boardName: name, orgId: org.id });
-                    if (!res.ok) return alert(res.data.message);
-                    hideModal(); loadBoards();
-                };
-            } else {
-                title.textContent = 'Add Member';
-                body.innerHTML = '<div class="form-group"><label>Username</label><input type="text" id="m_input" placeholder="Enter username"></div>';
-                submit.onclick = async () => {
-                    const username = document.getElementById('m_input').value.trim();
-                    if (!username) return;
-                    const res = await api('POST', '/addUserToOrganization', { username, orgId: org.id });
-                    if (!res.ok) return alert(res.data.message);
-                    hideModal(); loadMembers();
-                };
+                `;
+                modalSubmit.innerHTML = 'Create';
+                modalSubmit.onclick = createBoard;
+            } else if(type === 'member'){
+                modalTitle.textContent = 'Add Member to Organization';
+                modalBody.innerHTML = `
+                    <div class="form-group">
+                        <label>Member Username</label>
+                        <input type="text" id="memberUsername" placeholder="e.g. johndoe">
+                    </div>
+                `;
+                modalSubmit.innerHTML = 'Add Member';
+                modalSubmit.onclick = addMember;
             }
-            submit.textContent = type === 'board' ? 'Create' : 'Add';
-            overlay.classList.add('show');
         }
 
-        function hideModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+        function hideModal(){
+            document.getElementById('modalOverlay').classList.remove('show');
+        }
 
-        loadBoards();
-        loadMembers();
+        async function createBoard(){
+            const boardName = document.getElementById('boardName').value
+            if(!boardName){
+                alert('Please enter a board name');
+                return;
+            }
+
+            const token = localStorage.getItem('token');
+            const orgId = new URLSearchParams(window.location.search).get('orgId');
+
+            try {
+                const response = await fetch('http://localhost:3000/boards', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ boardName: boardName, orgId: orgId })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('Board created successfully');
+                    hideModal();
+                    // Optionally, refresh the board list here
+                } else {
+                    alert(data.message || 'Failed to create board');
+                }
+            } catch (error) {
+                console.error('Error creating board:', error);
+                alert('An error occurred while creating the board');
+            }
+        }
+
+        async function loadOrgBoards(){
+            const token = localStorage.getItem('token');
+            const orgId = new URLSearchParams(window.location.search).get('orgId');
+
+            try {
+                const response = await fetch(`http://localhost:3000/boards?orgId=${orgId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                });
+                const data = await response.json();
+
+                console.log(data);
+
+                if (response.ok) {
+                    const boardList = document.getElementById('boardList');
+                    boardList.innerHTML = '';
+                    data.boards.forEach(board => {
+                        const boardItem = document.createElement('div');
+                        boardItem.className = 'board-item';
+                        boardItem.innerHTML = `
+                            <h4>${board.name}</h4>
+                            <span class="arrow">➡️</span>
+                        `;
+                        boardItem.onclick = () => {
+                            window.location.href = `board.html?boardId=${board._id}`;
+                        };
+                        boardList.appendChild(boardItem);
+                    });
+                } else {
+                    alert(data.message || 'Failed to load boards');
+                }
+            } catch (error) {
+                console.error('Error loading boards:', error);
+                alert('An error occurred while loading boards');
+            }
+        }
+
+        window.onload = function() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            // Load organization details and boards
+            loadOrgBoards();
+        }
+
+        async function addMember(){
+                const memberName = document.getElementById('memberUsername').value
+            if(!memberName){
+                alert('Please enter a member username');
+                return;
+            }
+
+            const token = localStorage.getItem('token');
+            const orgId = new URLSearchParams(window.location.search).get('orgId');
+
+            try {
+                const response = await fetch(`http://localhost:3000/addUserToOrganization`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ username: memberName, orgId: orgId })
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('Member added successfully');
+                    hideModal();
+                    // Optionally, refresh the member list here
+                } else {
+                    alert(data.message || 'Failed to add member');
+                }
+            } catch (error) {
+                console.error('Error adding member:', error);
+                alert('An error occurred while adding the member');
+
+            }
+        }
     </script>
 </body>
 </html>

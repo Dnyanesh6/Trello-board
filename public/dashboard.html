@@ -148,7 +148,7 @@
 
                 if(response.ok){
                     hideModal();
-                    // loadOrganizations();
+                    loadOrganizations();
                 }
             } catch (error) {
                 // showError(error);
@@ -159,12 +159,57 @@
 
         async function loadOrganizations(){
             try {
-                const token
+                const token = localStorage.getItem('token');
+                const response = await fetch('http://localhost:3000/organizations',{
+                    headers:{'Authorization':`Bearer ${token}`}
+                });
+                const data = await response.json();
+                console.log(data);
+                renderOrganizations(data.organizations);
             } catch (error) {
                 console.log(error);
                 alert('Failed to load organizations');
             }
         }
+
+        window.onload = function(){
+            loadOrganizations();
+        }
+
+        function renderOrganizations(orgs) {
+        const orgGrid = document.getElementById('orgGrid');
+        const emptyState = document.getElementById('emptyState');
+        orgGrid.innerHTML = '';
+
+        const orgList = Array.isArray(orgs) ? orgs : orgs.organizations;
+
+        if (!orgList || orgList.length === 0) {
+            emptyState.style.display = 'block';
+            return;
+        } else {
+            emptyState.style.display = 'none';
+        }
+
+        orgList.map(org => {
+            const card = document.createElement('div');
+            card.className = 'org-card';
+            card.innerHTML = `
+            <div id="${org._id}" class="org-id" ">
+                <h3>${org.name}</h3>
+                <p>${org.description || ''}</p>
+                <div class="meta">
+                    <span>${org.boards?.length || 0} Boards</span>
+                    <span>${org.members?.length || 0} Members</span>
+                </div>
+            </div>
+            `;
+            card.onclick = () => {
+                localStorage.setItem('currentOrgId', org._id);
+                window.location.href = '/organization.html?orgId=' + org._id;
+            };
+            orgGrid.appendChild(card);
+        });
+    }
     </script>
 </body>
 </html>
