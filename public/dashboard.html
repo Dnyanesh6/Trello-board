@@ -132,22 +132,37 @@
 
             try {
                 const token = localStorage.getItem('token');
-                const response =await fetch('http://localhost:3000/create-org',{
+                const response = await fetch('http://localhost:3000/create-org',{
                     method:'POST',
                     headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
                     body:JSON.stringify({orgName:orgName, description:orgDesc})
                 })
 
-                const data = await response.json();
+                let data;
+                try {
+                    data = await response.json();
+                } catch (err) {
+                    console.log("JSON parse failed");
+                }
+
 
                 if(response.ok){
                     hideModal();
-                    loadOrganizations();
-                } else {
-                    alert(data.message || 'Failed to create organization');
+                    // loadOrganizations();
                 }
             } catch (error) {
-                alert('Failed to create organization');
+                // showError(error);
+                console.log(error);
+                alert('An error occurred while creating the organization');
+            }
+        }
+
+        async function loadOrganizations(){
+            try {
+                const token
+            } catch (error) {
+                console.log(error);
+                alert('Failed to load organizations');
             }
         }
     </script>
