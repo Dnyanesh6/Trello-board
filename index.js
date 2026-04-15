@@ -164,6 +164,8 @@ app.post('/boards', authMiddleware, async (req, res) => {
     const orgId = req.body.orgId;
 
     const {boardName} = req.body;
+    console.log(boardName,orgId);
+    
     if(!boardName || !orgId){
         res.status(401).json({
             message:"Incomplete data"
@@ -350,7 +352,10 @@ app.get('/organizations',authMiddleware,async (req, res) => {
 
 app.get('/boards',authMiddleware,async (req, res) => { //to be checked : saying only org members can access the boards but not using auth middleware
     const userId = req.userId;
-    const orgId = req.body.orgId;
+    const orgId = req.query.orgId;
+
+    console.log(userId, orgId);
+    
 
     if(!orgId){
         res.status(401).json({
@@ -369,12 +374,14 @@ app.get('/boards',authMiddleware,async (req, res) => { //to be checked : saying 
     return;
     }
 
-    if(userId !== org.admin && !org.members.includes(userId)){
-        res.status(403).json({
-            message:"Only organization members can access this resource"
-        })
-    return;
-    }
+    if (
+    userId !== org.admin.toString() &&
+    !org.members.map(id => id.toString()).includes(userId)
+) {
+    return res.status(403).json({
+        message: "Only organization members can access this resource"
+    });
+}
 
     const userBoards = await Board.find({
         orgId: orgId
