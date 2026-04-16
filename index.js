@@ -438,7 +438,7 @@ app.get('/issues',authMiddleware,async (req,res)=>{
 app.get('/members', authMiddleware,async  (req,res)=>{
     const userId = req.userId;
 
-    const orgId = req.body.orgId;
+    const orgId = req.query.orgId;
 
     if(!orgId){
         res.status(401).json({
@@ -458,12 +458,19 @@ app.get('/members', authMiddleware,async  (req,res)=>{
     return;
     }
 
-    if(userId !== org.admin && !org.members.includes(userId)){
-        res.status(403).json({
-            message:"Only organization members can access this resource"
-        })
-    return;
-    }
+    const isAdmin = org.admin.toString() === userId;
+
+    console.log(isAdmin);
+    
+
+    if (
+    userId !== org.admin.toString() &&
+    !org.members.map(id => id.toString()).includes(userId)
+) {
+    return res.status(403).json({
+        message: "Only organization members can access this resource"
+    });
+}
 
     const members = await User.find({
         _id: { $in: org.members }
@@ -471,7 +478,12 @@ app.get('/members', authMiddleware,async  (req,res)=>{
 
     res.status(200).json({
         message:"Members retrieved successfully",
-        members: members
+        members: members,
+        isAdmin: isAdmin,
+        organization:{
+            id: org._id,
+            admin:org.admin
+        }
     })
 });
 
@@ -544,12 +556,14 @@ app.delete('/issues',authMiddleware,async (req, res) => {
         _id: board.orgId
     });
 
-    if(userId !== org.admin &&  !org.members.includes(userId)){
-        res.status(403).json({
-            message:"Only organization members can access this resource"
-        })
-    return;
-    }
+    if (
+    userId !== org.admin.toString() &&
+    !org.members.map(id => id.toString()).includes(userId)
+) {
+    return res.status(403).json({
+        message: "Only organization members can access this resource"
+    });
+}
 
     await issue.deleteOne();
 
@@ -581,12 +595,14 @@ app.put('/delete-member', authMiddleware, async (req, res) => {
     return;
     }
 
-    if(userId !== org.admin && !org.members.includes(userId)){
-        res.status(403).json({
-            message:"Only organization admin can access this resource"
-        })
-    return;
-    }
+    if (
+    userId !== org.admin.toString() &&
+    !org.members.map(id => id.toString()).includes(userId)
+) {
+    return res.status(403).json({
+        message: "Only organization members can access this resource"
+    });
+}
 
     const memberRemoved = await User.findOne({
         username: username

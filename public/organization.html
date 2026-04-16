@@ -24,7 +24,7 @@
         .page-header h2 { font-size: 22px; color: #172b4d; }
         .page-header p { color: #5e6c84; font-size: 14px; margin-top: 4px; }
 
-        .panels { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+        /* .panels { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; } */
 
         .panel { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
         .panel-header { padding: 16px 20px; border-bottom: 1px solid #ebecf0; display: flex; justify-content: space-between; align-items: center; }
@@ -65,6 +65,9 @@
         .btn-cancel { background: #f4f5f7; color: #172b4d; }
         #backToOrgs { background: rgba(255,255,255,0.2); color: #fff; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 13px; }
         #backToOrgs:hover { background: rgba(255,255,255,0  .3); }
+        .panel-align { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+        .remove-btn { background: #eb5a46; border: none; border-radius: 4px;color: #f7f7f7; cursor: pointer; font-size: 14px; padding: 4px 8px; }
+
 
         @media (max-width: 768px) { .panels { grid-template-columns: 1fr; } }
     </style>
@@ -86,7 +89,8 @@
             <h2 id="orgTitle"></h2>
             <p id="orgDescription"></p>
         </div>
-
+    
+    <div class="panel-align">
         <div class="panels">
             <!-- Boards Panel -->
             <div class="panel">
@@ -96,8 +100,10 @@
                 </div>
                 <div class="panel-body" id="boardList"></div>
             </div>
+        </div>
 
             <!-- Members Panel -->
+        <div class="panels">
             <div class="panel">
                 <div class="panel-header">
                     <h3>👥 Members</h3>
@@ -106,6 +112,7 @@
                 <div class="panel-body" id="memberList"></div>
             </div>
         </div>
+    </div>
     </div>
 
     <!-- Modal -->
@@ -234,6 +241,82 @@
             }
         }
 
+        async function LoadMembers(){
+            const token = localStorage.getItem('token');
+            const orgId = new URLSearchParams(window.location.search).get('orgId');
+
+            try {
+                const response = await fetch(`http://localhost:3000/members?orgId=${orgId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    const memberList = document.getElementById('memberList');
+                    memberList.innerHTML = '';
+
+                    const isAdmin = data.isAdmin;
+                    data.members.forEach(member => {
+                        alert(member._id);
+                        const memberItem = document.createElement('div');
+                        memberItem.className = 'member-item';
+                        memberItem.innerHTML = `
+                            <h4 id="${member._id}">${member.username}</h4>
+                        `;
+                        memberList.appendChild(memberItem);
+
+                        if (isAdmin) {
+                            const removeBtn = document.createElement('button');
+                            removeBtn.textContent = 'Remove';
+                            removeBtn.className = 'remove-btn';
+
+                            removeBtn.onclick = () => removeMember(member.username);
+
+                            memberItem.appendChild(removeBtn);
+                        }
+                    });
+                } else {
+                    alert(data.message || 'Failed to load members');
+                }
+
+            } catch (error) {
+                console.error('Error loading members:', error);
+                alert('An error occurred while loading members');
+            }
+        }
+
+        async function removeMember(memberUsername) {
+            const token = localStorage.getItem('token');
+            const orgId = new URLSearchParams(window.location.search).get('orgId');
+
+            try{
+                const response = await fetch(`http://localhost:3000/delete-member`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ username: memberUsername, orgId: orgId })
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert('Member removed successfully');
+                    LoadMembers();
+                } else {
+                    alert(data.message || 'Failed to remove member');
+                }
+            }
+            catch(error){
+                console.error('Error removing member:', error);
+                alert('An error occurred while removing the member');
+            }
+        }
+
         window.onload = function() {
             const token = localStorage.getItem('token');
             if (!token) {
@@ -243,6 +326,7 @@
 
             // Load organization details and boards
             loadOrgBoards();
+            LoadMembers();
         }
 
         async function addMember(){
@@ -269,6 +353,7 @@
                 if (response.ok) {
                     alert('Member added successfully');
                     hideModal();
+                    LoadMembers();
                     // Optionally, refresh the member list here
                 } else {
                     alert(data.message || 'Failed to add member');
