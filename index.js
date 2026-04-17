@@ -17,6 +17,8 @@ import { authMiddleware } from './middleware.js';
 import { stat } from 'fs';
 
 dotenv.config();
+app.use(express.json())
+app.use(express.static(path.join(__dirname, 'public')));
 
 const connection = async () => {
     try {
@@ -34,12 +36,7 @@ connection();
 const app = express()
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT,()=>{
-    console.log(`server is running on port ${PORT}`);
-    console.log(`http://localhost:${PORT}`);
-})
-app.use(express.json())
-app.use(express.static(path.join(__dirname, 'public')));
+
 
 app.post("/health",authMiddleware, (req,res)=>{
     
@@ -630,3 +627,8 @@ app.put('/delete-member', authMiddleware, async (req, res) => {
 app.get('/', ( res) => {
     res.sendFile(__dirname + '/public/index.html');
 });
+
+app.listen(3000,()=>{
+    console.log('server is running on port 3000');
+    console.log('http://localhost:3000');
+})
