@@ -629,6 +629,6 @@ app.get('/', ( res) => {
 });
 
 app.listen(3000,()=>{
-    console.log('server is running on port 3000');
-    console.log('http://localhost:3000');
+    console.log(`server is running on port ${PORT}`);
+    console.log(`http://localhost:${PORT}`);
 })
