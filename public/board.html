@@ -6,31 +6,32 @@
     <title>Trello Board - Board View</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #cce5ff; min-height: 100vh; display: flex; flex-direction: column; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f5f7; min-height: 100vh; display: flex; flex-direction: column; }
 
         .navbar { background: #0079bf; padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; }
         .navbar .left { display: flex; align-items: center; gap: 12px; }
-        .navbar h1 { color: #fff; font-size: 20px; cursor: pointer; }
-        .navbar .breadcrumb { color: rgba(255,255,255,0.7); font-size: 14px; }
-        .navbar .breadcrumb a { color: rgba(255,255,255,0.7); text-decoration: none; }
-        .navbar .breadcrumb a:hover { color: #fff; }
+        .navbar h1 { color: #fff; font-size: 20px; }
         .navbar .right { display: flex; align-items: center; gap: 14px; }
         .navbar .username { color: rgba(255,255,255,0.9); font-size: 14px; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 4px; }
         .navbar button { background: rgba(255,255,255,0.2); color: #fff; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 13px; }
         .navbar button:hover { background: rgba(255,255,255,0.3); }
 
-        .board-bar { padding: 12px 20px; display: flex; align-items: center; gap: 12px; }
-        .board-bar h2 { color: #fff; font-size: 18px; font-weight: 700; }
-        .board-bar .back { color: rgba(255,255,255,0.8); text-decoration: none; font-size: 13px; background: rgba(255,255,255,0.15); padding: 4px 12px; border-radius: 4px; }
-        .board-bar .back:hover { background: #0079bf }
+        .board-bar { padding: 12px 20px; display: flex; align-items: center; gap: 12px; background: rgba(0,121,191,0.08); }
+        .board-bar h2 { font-size: 18px; font-weight: 700; color: #172b4d; }
+        .btn-new-issue { background: #0079bf; color: #fff; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; }
+        .btn-new-issue:hover { background: #005a8c; }
 
-        .columns-wrapper { flex: 1; padding: 0 20px 20px; overflow-x: auto; background: #f4f5f7; }
+        .columns-wrapper { flex: 1; padding: 20px; overflow-x: auto; }
         .columns { display: flex; gap: 14px; align-items: flex-start; }
 
         .column { background: #ebecf0; border-radius: 8px; width: 300px; min-width: 300px; display: flex; flex-direction: column; max-height: calc(100vh - 140px); }
         .column-header { padding: 10px 14px; font-size: 14px; font-weight: 700; color: #172b4d; display: flex; justify-content: space-between; align-items: center; }
         .column-header .count { background: #c1c7d0; color: #fff; font-size: 11px; padding: 1px 8px; border-radius: 10px; font-weight: 600; }
         .column-body { padding: 0 8px 8px; overflow-y: auto; flex: 1; }
+
+        .status-todo { border-top: 3px solid #0079bf; }
+        .status-doing { border-top: 3px solid #f5a623; }
+        .status-done { border-top: 3px solid #61bd4f; }
 
         .card { background: #fff; border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); transition: box-shadow 0.15s; }
         .card:hover { box-shadow: 0 3px 8px rgba(0,0,0,0.18); }
@@ -43,48 +44,128 @@
         .btn-delete { background: #ffebe6; color: #bf2600; }
         .btn-delete:hover { background: #ffd4cc; }
 
-        .add-card-btn { background: none; border: none; color: #5e6c84; cursor: pointer; font-size: 13px; padding: 8px 12px; text-align: left; width: 100%; border-radius: 6px; }
+        .add-card-btn { background: none; border: none; color: #5e6c84; cursor: pointer; font-size: 13px; padding: 8px 12px; text-align: left; width: 100%; border-radius: 0 0 8px 8px; }
         .add-card-btn:hover { background: #d5d8dc; color: #172b4d; }
 
-        /* Inline add form */
-        .add-form { padding: 0 8px 8px; display: none; }
-        .add-form.show { display: block; }
-        .add-form input, .add-form textarea { width: 100%; padding: 8px 10px; border: 2px solid #0079bf; border-radius: 4px; font-size: 13px; font-family: inherit; margin-bottom: 6px; }
-        .add-form textarea { resize: vertical; min-height: 50px; }
-        .add-form .form-actions { display: flex; gap: 6px; }
-        .add-form button { padding: 6px 14px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 600; }
-        .add-form .btn-submit { background: #0079bf; color: #fff; }
-        .add-form .btn-close { background: none; color: #5e6c84; font-size: 18px; padding: 4px 8px; }
+        /* Modal overlay */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
 
-        .status-todo { border-top: 3px solid #0079bf; }
-        .status-doing { border-top: 3px solid #f5a623; }
-        .status-done { border-top: 3px solid #61bd4f; }
+        .modal { background: #fff; border-radius: 10px; width: 100%; max-width: 480px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); animation: modalIn 0.2s ease-out; }
+        @keyframes modalIn { from { opacity: 0; transform: translateY(-20px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+        .modal-header { padding: 18px 24px; border-bottom: 1px solid #ebecf0; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { font-size: 16px; color: #172b4d; font-weight: 700; }
+        .modal-close { background: none; border: none; font-size: 22px; color: #5e6c84; cursor: pointer; padding: 4px 8px; border-radius: 4px; line-height: 1; }
+        .modal-close:hover { background: #ebecf0; color: #172b4d; }
+
+        .modal-body { padding: 20px 24px; }
+        .modal-body label { display: block; font-size: 13px; font-weight: 600; color: #172b4d; margin-bottom: 6px; }
+        .modal-body input,
+        .modal-body textarea { width: 100%; padding: 10px 12px; border: 2px solid #dfe1e6; border-radius: 6px; font-size: 14px; font-family: inherit; transition: border-color 0.15s; outline: none; }
+        .modal-body input:focus,
+        .modal-body textarea:focus { border-color: #0079bf; }
+        .modal-body textarea { resize: vertical; min-height: 80px; }
+        .form-group { margin-bottom: 16px; }
+
+        .modal-footer { padding: 16px 24px; border-top: 1px solid #ebecf0; display: flex; justify-content: flex-end; gap: 8px; }
+        .btn-cancel { background: #f4f5f7; color: #5e6c84; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; }
+        .btn-cancel:hover { background: #ebecf0; color: #172b4d; }
+        .btn-create { background: #0079bf; color: #fff; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; }
+        .btn-create:hover { background: #005a8c; }
+        .btn-create:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        @media (max-width: 520px) {
+            .modal { margin: 16px; }
+            .columns-wrapper { padding: 12px; }
+        }
     </style>
 </head>
 <body>
+
     <nav class="navbar">
         <div class="left">
-            <h1 onclick="location.href='dashboard.html'">🗂 Trello Board</h1>
-            <span class="breadcrumb">
-                <a style="" href="dashboard.html">Organizations</a>
-                <a href="organization.html" id="orgNameNav"></a>
-                <span id="boardNameNav"></span>
-            </span>
+            <h1>🗂 Trello Board</h1>
         </div>
         <div class="right">
             <span class="username" id="usernameDisplay"></span>
-            <button onclick="logout()">Logout</button>
+            <button>Logout</button>
         </div>
     </nav>
 
     <div class="board-bar">
-        <a class="back" href="organization.html">← Back</a>
-        <h2 id="boardTitle"></h2>
+        <h2>📋 Issues</h2>
+        <button class="btn-new-issue" onclick="showModal()">+ New Issue</button>
     </div>
 
     <div class="columns-wrapper">
-        <div class="columns" id="columnsContainer"></div>
+        <div class="columns" id="board">
+            <!-- Columns rendered by JS -->
+        </div>
     </div>
 
+    <!-- New Issue Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Create New Issue</h3>
+            </div>
+            <form id="issueForm" onsubmit="handleCreate(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="issueTitle">Title</label>
+                        <input type="text" id="issueTitle" placeholder="e.g. Fix login bug" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="issueDesc">Description</label>
+                        <textarea id="issueDesc" placeholder="Describe the issue..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn-create" onclick="createIssue()">Create Issue</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+
+        async function createIssue(){
+            const title = document.getElementById("issueTitle").value;
+            const description = document.getElementById("issueDesc").value;
+
+            const token = localStorage.getItem("token");
+            const boardId = new URLSearchParams(window.location.search).get("boardId");
+
+            const response = await fetch(`http:///localhost:3000/issues`,{
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({ title, description, boardId })
+            });
+
+            const data = await response.json();
+            console.log(data);
+            
+
+            if(response.ok){
+                alert("Issue created successfully!");
+                closeModal();
+                // Optionally, refresh the board to show the new issue
+                // render();
+            } else {
+                alert(`Error creating issue: ${data.message || 'Unknown error'}`);
+            }
+        }
+
+        function showModal() { document.getElementById("modalOverlay").classList.add("active"); document.getElementById("issueTitle").focus(); }
+        function closeModal() { document.getElementById("modalOverlay").classList.remove("active"); document.getElementById("issueForm").reset(); }
+
+        document.getElementById("modalOverlay").addEventListener("click", function(e) { if (e.target === this) closeModal(); });
+        // render();
+    </script>
 </body>
 </html>

@@ -32,9 +32,11 @@ const connection = async () => {
 connection();
 
 const app = express()
-app.listen(3000,()=>{
-    console.log('server is running on port 3000');
-    console.log('http://localhost:3000');
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT,()=>{
+    console.log(`server is running on port ${PORT}`);
+    console.log(`http://localhost:${PORT}`);
 })
 app.use(express.json())
 app.use(express.static(path.join(__dirname, 'public')));
@@ -395,7 +397,7 @@ app.get('/boards',authMiddleware,async (req, res) => { //to be checked : saying 
 
 app.get('/issues',authMiddleware,async (req,res)=>{
     const userId = req.userId;
-    const boardId = req.body.boardId;
+    const boardId = req.query.boardId;
 
     if(!boardId){
         res.status(401).json({

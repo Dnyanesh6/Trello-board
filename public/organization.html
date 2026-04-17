@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Trello Board - Organization</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -69,14 +70,37 @@
         .remove-btn { background: #eb5a46; border: none; border-radius: 4px;color: #f7f7f7; cursor: pointer; font-size: 14px; padding: 4px 8px; }
 
 
-        @media (max-width: 768px) { .panels { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) {
+        .panel-align {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+
+        .container {
+            padding: 16px 10px;
+        }
+
+        .panel-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .btn-create {
+            width: 100%;
+        }
+    }
     </style>
 </head>
 <body>
     <nav class="navbar">
         <div class="left">
             <h1 onclick="location.href='dashboard.html'">🗂 Trello Board</h1>
-            <button id="backToOrgs" onclick="location.href='dashboard.html'">Back to Organizations</button>
+            <button id="backToOrgs" onclick="location.href='dashboard.html'">Back</button>
         </div>
         <div class="right">
             <span class="username" id="usernameDisplay"></span>
@@ -111,7 +135,7 @@
                 </div>
                 <div class="panel-body" id="memberList"></div>
             </div>
-        </div>
+        </div>  
     </div>
     </div>
 
@@ -140,7 +164,7 @@
             const modalBody = document.getElementById('modalBody');
             const modalSubmit = document.getElementById('modalSubmit');
             if(type === 'board'){
-                modalTitle.textContent = 'Create New Board';
+                modalTitle.innerHTML = 'Create New Board';
                 modalBody.innerHTML = `
                     <div class="form-group">
                         <label>Board Name</label>
@@ -261,7 +285,6 @@
 
                     const isAdmin = data.isAdmin;
                     data.members.forEach(member => {
-                        alert(member._id);
                         const memberItem = document.createElement('div');
                         memberItem.className = 'member-item';
                         memberItem.innerHTML = `
