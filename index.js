@@ -6,6 +6,7 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import bcrypt from 'bcrypt';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -65,9 +66,11 @@ app.post('/signup', async (req, res) => {
         })
     }
 
+    const hasdedPassword = await bcrypt.hash(password, 10);
+
     const newUser =await User.create({
         username: username,
-        password: password
+        password: hasdedPassword
     })
 
     console.log(newUser);
@@ -89,14 +92,18 @@ app.post('/signin', async (req, res) => {
         return;
     }
 
+    const hasdedPassword = await bcrypt.hash(password, 10);
+
+
     const user = await User.findOne({
         username: username,
-        password: password
     })
+
+    const isMatch = await bcrypt.compare(password, user.password);
     const userId = user._id;
-    if(!user){
+    if(!user || !isMatch){
         res.status(404).json({
-            message:"User not found"
+            message:"User not found or invalid credentials"
         })
     return;
     }
