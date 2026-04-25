@@ -131,6 +131,23 @@
 
     <script>
 
+        async function render(){
+            const boardId = new URLSearchParams(window.location.search).get("boardId");
+            const token = localStorage.getItem("token");
+            if(!token){
+                alert("You must be logged in to view this page.");
+                window.location.href = "index.html";
+                return;
+            }
+
+            const response = await fetch(`http://localhost:3000/issues?boardId=${boardId}`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            const data = await response.json();
+            console.log(data);
+        }
+
         async function createIssue(){
             const title = document.getElementById("issueTitle").value;
             const description = document.getElementById("issueDesc").value;
@@ -155,7 +172,7 @@
                 alert("Issue created successfully!");
                 closeModal();
                 // Optionally, refresh the board to show the new issue
-                // render();
+                await render();
             } else {
                 alert(`Error creating issue: ${data.message || 'Unknown error'}`);
             }
@@ -165,7 +182,7 @@
         function closeModal() { document.getElementById("modalOverlay").classList.remove("active"); document.getElementById("issueForm").reset(); }
 
         document.getElementById("modalOverlay").addEventListener("click", function(e) { if (e.target === this) closeModal(); });
-        // render();
+        await render();
     </script>
 </body>
 </html>

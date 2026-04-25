@@ -18,6 +18,7 @@ import { authMiddleware } from './middleware.js';
 import { stat } from 'fs';
 
 dotenv.config();
+const app = express()
 app.use(express.json())
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -34,7 +35,6 @@ const connection = async () => {
 
 connection();
 
-const app = express()
 
 const PORT = process.env.PORT || 3000;
 
@@ -49,14 +49,14 @@ app.post("/health",authMiddleware, (req,res)=>{
 //CREATE
 app.post('/signup', async (req, res) => {
     const {username, password} = req.body;
-
+    
     if(!username || !password) {
         res.status(400).json({
             message:"Incomplete data"
         })
-    return;
+        return;
     }
-
+    
     const userExist = await User.findOne({
         username: username
     })
@@ -65,7 +65,7 @@ app.post('/signup', async (req, res) => {
             message:"User already exists with same username"
         })
     }
-
+    
     const hasdedPassword = await bcrypt.hash(password, 10);
 
     const newUser =await User.create({
@@ -92,14 +92,12 @@ app.post('/signin', async (req, res) => {
         return;
     }
 
-    const hasdedPassword = await bcrypt.hash(password, 10);
-
-
     const user = await User.findOne({
         username: username,
     })
 
     const isMatch = await bcrypt.compare(password, user.password);
+
     const userId = user._id;
     if(!user || !isMatch){
         res.status(404).json({
