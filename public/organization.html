@@ -100,7 +100,7 @@
     <nav class="navbar">
         <div class="left">
             <h1 onclick="location.href='dashboard.html'">🗂 Trello Board</h1>
-            <button id="backToOrgs" onclick="location.href='dashboard.html'">Back</button>
+            <button id="backBtn" onclick="location.href='dashboard.html'">Back</button>
         </div>
         <div class="right">
             <span class="username" id="usernameDisplay"></span>
@@ -216,6 +216,7 @@
                     alert('Board created successfully');
                     hideModal();
                     // Optionally, refresh the board list here
+                    loadOrgBoards();
                 } else {
                     alert(data.message || 'Failed to create board');
                 }

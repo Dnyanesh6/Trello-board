@@ -294,12 +294,13 @@ app.post('/addUserToOrganization',authMiddleware, async (req, res) => {
     return;
     }
 
-    if (!org.admin.equals(userId)) {
-        res.status(403).json({
-            message:"Only the organization admin can add members to the organization"
-        })
-        return;
-    }
+    if (
+    userId !== org.admin.toString() 
+) {
+    return res.status(403).json({
+        message: "Only organization members can add new members to the organization"
+    });
+}
 
     const user = await User.findOne({
         username: username
@@ -378,14 +379,11 @@ app.get('/boards',authMiddleware,async (req, res) => { //to be checked : saying 
     return;
     }
 
-    if (
-    userId !== org.admin.toString() &&
-    !org.members.map(id => id.toString()).includes(userId)
-) {
+    if (userId !== org.admin.toString() && !org.members.map(id => id.toString()).includes(userId)) {
     return res.status(403).json({
         message: "Only organization members can access this resource"
     });
-}
+    }
 
     const userBoards = await Board.find({
         orgId: orgId
@@ -421,11 +419,11 @@ app.get('/issues',authMiddleware,async (req,res)=>{
     const org = await Organization.findOne({
         _id: board.orgId
     });
-    if(userId !== org.admin && !org.members.includes(userId)){
-        res.status(403).json({
-            message:"Only organization members can access this resource"
-        })
-    return;
+
+    if (userId !== org.admin.toString() && !org.members.map(id => id.toString()).includes(userId)) {
+    return res.status(403).json({
+        message: "Only organization members can access this resource"
+    });
     }
 
     const boardIssues = await Issue.find({
@@ -507,13 +505,12 @@ app.put('/issues-update', authMiddleware, async (req, res) => {
     const board = await Board.findOne({ _id: issue.boardId });
     const org = await Organization.findOne({ _id: board.orgId });
 
-    if (userId !== org.admin && !org.members.includes(userId)) {
-        return res.status(403).json({
-            message: "Only organization members can access this resource"
-        });
+    if (userId !== org.admin.toString() && !org.members.map(id => id.toString()).includes(userId)) {
+    return res.status(403).json({
+        message: "Only organization members can access this resource"
+    });
     }
 
-    // ✅ Define status flow
     const statusFlow = ['To Do', 'In Progress', 'Done'];
 
     let currentIndex = statusFlow.indexOf(issue.status);
@@ -522,7 +519,6 @@ app.put('/issues-update', authMiddleware, async (req, res) => {
         issue.status = statusFlow[currentIndex + 1];
     }
 
-    // ✅ SAVE changes
     await issue.save();
 
     res.status(200).json({

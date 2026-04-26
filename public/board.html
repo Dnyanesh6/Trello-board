@@ -26,7 +26,7 @@
 
         .column { background: #ebecf0; border-radius: 8px; width: 300px; min-width: 300px; display: flex; flex-direction: column; max-height: calc(100vh - 140px); }
         .column-header { padding: 10px 14px; font-size: 14px; font-weight: 700; color: #172b4d; display: flex; justify-content: space-between; align-items: center; }
-        .column-header .count { background: #c1c7d0; color: #fff; font-size: 11px; padding: 1px 8px; border-radius: 10px; font-weight: 600; }
+        .column-header .count { background: #fff; color: #30f00a; font-size: 20px; padding: 1px 8px; border-radius: 10px; font-weight: 600; }
         .column-body { padding: 0 8px 8px; overflow-y: auto; flex: 1; }
 
         .status-todo { border-top: 3px solid #0079bf; }
@@ -54,20 +54,6 @@
         .modal { background: #fff; border-radius: 10px; width: 100%; max-width: 480px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); animation: modalIn 0.2s ease-out; }
         @keyframes modalIn { from { opacity: 0; transform: translateY(-20px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
-        .modal-header { padding: 18px 24px; border-bottom: 1px solid #ebecf0; display: flex; justify-content: space-between; align-items: center; }
-        .modal-header h3 { font-size: 16px; color: #172b4d; font-weight: 700; }
-        .modal-close { background: none; border: none; font-size: 22px; color: #5e6c84; cursor: pointer; padding: 4px 8px; border-radius: 4px; line-height: 1; }
-        .modal-close:hover { background: #ebecf0; color: #172b4d; }
-
-        .modal-body { padding: 20px 24px; }
-        .modal-body label { display: block; font-size: 13px; font-weight: 600; color: #172b4d; margin-bottom: 6px; }
-        .modal-body input,
-        .modal-body textarea { width: 100%; padding: 10px 12px; border: 2px solid #dfe1e6; border-radius: 6px; font-size: 14px; font-family: inherit; transition: border-color 0.15s; outline: none; }
-        .modal-body input:focus,
-        .modal-body textarea:focus { border-color: #0079bf; }
-        .modal-body textarea { resize: vertical; min-height: 80px; }
-        .form-group { margin-bottom: 16px; }
-
         .modal-footer { padding: 16px 24px; border-top: 1px solid #ebecf0; display: flex; justify-content: flex-end; gap: 8px; }
         .btn-cancel { background: #f4f5f7; color: #5e6c84; border: none; padding: 8px 18px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; }
         .btn-cancel:hover { background: #ebecf0; color: #172b4d; }
@@ -79,17 +65,35 @@
             .modal { margin: 16px; }
             .columns-wrapper { padding: 12px; }
         }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: #fff; border-radius: 8px; padding: 28px; width: 440px; max-width: 90%; }
+        .modal h3 { margin-bottom: 20px; color: #172b4d; font-size: 18px; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 600; color: #5e6c84; margin-bottom: 4px; text-transform: uppercase; }
+        .modal input, .modal textarea { width: 100%; padding: 10px; border: 2px solid #dfe1e6; border-radius: 4px; font-size: 14px; font-family: inherit; }
+        .modal input:focus, .modal textarea:focus { border-color: #0079bf; outline: none; }
+        .modal textarea { min-height: 80px; resize: vertical; }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+        .modal-actions button { padding: 8px 18px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; }
+        .btn-primary { background: #0079bf; color: #fff; }
+        .btn-primary:hover { background: #026aa7; }
+        .btn-cancel { background: #f4f5f7; color: #172b4d; }
+        .error { background: #ffebe6; color: #bf2600; padding: 8px 12px; border-radius: 4px; font-size: 13px; margin-bottom: 12px; display: none; }
     </style>
 </head>
 <body>
 
     <nav class="navbar">
         <div class="left">
-            <h1>🗂 Trello Board</h1>
+            <h1 onclick="location.href='dashboard.html'">🗂 Trello Board</h1>
+            <!-- <button id="orgBtn">Orgs</button> -->
+            <!-- <button id="backBtn">Back</button> -->
         </div>
         <div class="right">
             <span class="username" id="usernameDisplay"></span>
-            <button>Logout</button>
+            <button onclick="logout()">Logout</button>
         </div>
     </nav>
 
@@ -104,85 +108,206 @@
         </div>
     </div>
 
-    <!-- New Issue Modal -->
-    <div class="modal-overlay" id="modalOverlay">
+    <!-- Modal -->
+    <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)hideModal()">
         <div class="modal">
-            <div class="modal-header">
-                <h3>Create New Issue</h3>
+            <h3>Create Issue</h3>
+            <div class="error" id="errorMsg"></div>
+            <div class="form-group">
+                <label>Issue Title</label>
+                <input type="text" id="issueTitle" placeholder="e.g. Fix login bug">
             </div>
-            <form id="issueForm" onsubmit="handleCreate(event)">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="issueTitle">Title</label>
-                        <input type="text" id="issueTitle" placeholder="e.g. Fix login bug" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="issueDesc">Description</label>
-                        <textarea id="issueDesc" placeholder="Describe the issue..."></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
-                    <button type="submit" class="btn-create" onclick="createIssue()">Create Issue</button>
-                </div>
-            </form>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="issueDesc" placeholder="Describe the issue..."></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="hideModal()">Cancel</button>
+                <button class="btn-primary" onclick="createIssue()">Create</button>
+            </div>
         </div>
     </div>
 
     <script>
 
-        async function render(){
-            const boardId = new URLSearchParams(window.location.search).get("boardId");
-            const token = localStorage.getItem("token");
-            if(!token){
-                alert("You must be logged in to view this page.");
-                window.location.href = "index.html";
-                return;
-            }
+const orgId = new URLSearchParams(window.location.search).get("orgId");
 
-            const response = await fetch(`http://localhost:3000/issues?boardId=${boardId}`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
+const orgBtn = document.getElementById("orgBtn");
 
-            const data = await response.json();
-            console.log(data);
-        }
+orgBtn.onclick = () => {
+    if (orgId) {
+        window.location.href = `organization.html?orgId=${orgId}`;
+    } else {
+        window.location.href = "organization.html";
+    }
+};
 
-        async function createIssue(){
-            const title = document.getElementById("issueTitle").value;
-            const description = document.getElementById("issueDesc").value;
+//This function is used to update the status of an issue, 
+//it sends a PUT request to the backend with the issue ID and updates the issue status based on the defined flow (To Do -> In Progress -> Done). It also handles errors and displays an alert if the update fails.
+    async function updateIssue(issueId) {
+        const token = localStorage.getItem("token");
+        const issueID = issueId;
+        const response = await fetch(`http://localhost:3000/issues-update`,{
+            method : "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ issueId: issueID })
+        })
 
-            const token = localStorage.getItem("token");
-            const boardId = new URLSearchParams(window.location.search).get("boardId");
-
-            const response = await fetch(`http:///localhost:3000/issues`,{
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify({ title, description, boardId })
-            });
-
-            const data = await response.json();
-            console.log(data);
-            
-
+        const data = await response.json();
             if(response.ok){
-                alert("Issue created successfully!");
-                closeModal();
-                // Optionally, refresh the board to show the new issue
                 await render();
             } else {
-                alert(`Error creating issue: ${data.message || 'Unknown error'}`);
+                alert(`Error updating issue: ${data.message || 'Unknown error'}`);
             }
-        }
+}
 
-        function showModal() { document.getElementById("modalOverlay").classList.add("active"); document.getElementById("issueTitle").focus(); }
-        function closeModal() { document.getElementById("modalOverlay").classList.remove("active"); document.getElementById("issueForm").reset(); }
+// This function is used to load the board view, 
+// it fetches the issues for the given board and renders them in their respective columns based on their status. It also handles the creation of new issues and updating issue status.
+async function render() {
+    const boardId = new URLSearchParams(window.location.search).get("boardId");
+    const token = localStorage.getItem("token");
 
-        document.getElementById("modalOverlay").addEventListener("click", function(e) { if (e.target === this) closeModal(); });
+    if (!token) {
+        alert("You must be logged in");
+        window.location.href = "index.html";
+        return;
+    }
+
+    const response = await fetch(`http://localhost:3000/issues?boardId=${boardId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const data = await response.json();
+    console.log(data);
+
+    if (response.ok) {
+        const boardDiv = document.getElementById("board");
+        boardDiv.innerHTML = "";
+
+        const columns = {
+            "To Do": [],
+            "In Progress": [],
+            "Done": []
+        };
+
+        data.issues.forEach(issue => {
+            if (columns[issue.status]) {
+                columns[issue.status].push(issue);
+            }
+        });
+
+        Object.keys(columns).forEach(status => {
+            const column = document.createElement("div");
+            column.className = `column status-${status}`;
+
+            column.innerHTML = `
+                <div class="column-header">
+                    ${status.toUpperCase()}
+                    ${status === "To Do" ? `<span class="count" style="background: #fff; color: #ec0909;">${columns[status].length}</span>` : 
+                        (status === "In Progress" ? `<span class="count" style="background: #fff; color: #ec7309;">${columns[status].length}</span>` :
+                    `<span class="count" style="background: #fff; color: #09ec36;">${columns[status].length}</span>`)}
+                </div>
+                <div class="column-body" id="${status}-column"></div>
+            `;
+
+            boardDiv.appendChild(column);
+
+            const columnBody = column.querySelector(".column-body");
+
+            columns[status].forEach(issue => {
+                const card = document.createElement("div");
+                card.className = "card";
+
+                card.innerHTML = `
+                    <div class="card-title">${issue.title}</div>
+                    <div class="card-desc">${issue.description || ""}</div>
+                    <div class="card-footer">
+                        ${status !== "Done" ? `<button onClick="updateIssue('${issue._id}')">Update Status</button>` : ""}
+                        ${status == "Done" ? `<button class="btn-delete" onClick="deleteIssue('${issue._id}')">Delete</button>` : ""}
+                    </div>
+                `;
+
+                columnBody.appendChild(card);
+            });
+        });
+    }
+}
+
+//This fucntion is used to load organizations on dashboard page,
+// it fetches the organizations from the backend and renders them on the page. It also handles errors and displays an alert if the organizations fail to load.
+async function createIssue(){
+    const title = document.getElementById("issueTitle").value;
+    const description = document.getElementById("issueDesc").value;
+    const token = localStorage.getItem("token");
+
+    const boardId = new URLSearchParams(window.location.search).get("boardId");
+
+    const response = await fetch(`http://localhost:3000/issues`,{
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+            },
+        body: JSON.stringify({ title, description, boardId })
+    });
+
+    const data = await response.json();
+
+    if(response.ok){
+        alert("Issue created successfully!");
+        hideModal();
+        // Optionally, refresh the board to show the new issue
         await render();
-    </script>
+        } else {
+            alert(`Error creating issue: ${data.message || 'Unknown error'}`);
+        }
+}
+
+function showModal() {
+    document.getElementById('modalOverlay').classList.add('active');
+}
+
+function hideModal() {
+    document.getElementById('modalOverlay').classList.remove('active');
+}
+
+// This function is used to show the modal for creating a new organization,
+// it resets the input fields and displays the modal overlay.
+window.onload = async function() {
+    const usernameDisplay = document.getElementById('usernameDisplay');
+    const token = localStorage.getItem('token');
+    if(token){
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        usernameDisplay.textContent = payload.username || 'User';
+    } else {
+        usernameDisplay.textContent = 'User';
+    }
+    await render();
+}
+
+// This function is used to delete the issue that is in done status, it sends a DELETE request to the backend with the issue ID and removes the issue from the board if the deletion is successful. It also handles errors and displays an alert if the deletion fails.
+async function deleteIssue(issueId){
+    const token = localStorage.getItem("token");
+    const response = await fetch(`http://localhost:3000/issues`,{
+        method : "DELETE",
+        headers: {
+            "Content-Type": "application/json",
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ issueId: issueId })
+    })
+
+    const data = await response.json();
+        if(response.ok){
+            // Optionally, refresh the board to reflect the deletion
+            await render();
+        } else {
+            alert(`Error deleting issue: ${data.message || 'Unknown error'}`);
+        }
+}    
+</script>
 </body>
 </html>
