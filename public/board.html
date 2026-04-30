@@ -257,7 +257,6 @@ async function createIssue(){
     const data = await response.json();
 
     if(response.ok){
-        alert("Issue created successfully!");
         hideModal();
         // Optionally, refresh the board to show the new issue
         await render();
@@ -276,6 +275,7 @@ function hideModal() {
 
 // This function is used to show the modal for creating a new organization,
 // it resets the input fields and displays the modal overlay.
+//to be copied in every window
 window.onload = async function() {
     const usernameDisplay = document.getElementById('usernameDisplay');
     const token = localStorage.getItem('token');

@@ -213,7 +213,6 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    alert('Board created successfully');
                     hideModal();
                     // Optionally, refresh the board list here
                     loadOrgBoards();
@@ -329,14 +328,12 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    alert('Member removed successfully');
                     LoadMembers();
                 } else {
                     alert(data.message || 'Failed to remove member');
                 }
             }
             catch(error){
-                console.error('Error removing member:', error);
                 alert('An error occurred while removing the member');
             }
         }
@@ -375,10 +372,9 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    alert('Member added successfully');
                     hideModal();
-                    LoadMembers();
                     // Optionally, refresh the member list here
+                    LoadMembers();
                 } else {
                     alert(data.message || 'Failed to add member');
                 }

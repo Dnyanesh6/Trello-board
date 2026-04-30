@@ -164,7 +164,6 @@
                     headers:{'Authorization':`Bearer ${token}`}
                 });
                 const data = await response.json();
-                console.log(data);
                 renderOrganizations(data.organizations);
             } catch (error) {
                 console.log(error);

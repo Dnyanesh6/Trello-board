@@ -144,13 +144,12 @@
 </div>
 
 <script>
-    console.log("Trello Board App - Frontend");
 
-    async function handleAuth() {
+async function handleAuth() {
     const username = document.getElementById('authUsername').value;
     const password = document.getElementById('authPassword').value;
 
-    // ✅ basic validation
+    // basic validation
     if (!username || !password) {
         alert("Please fill all fields");
         return;
@@ -170,7 +169,7 @@
 
         if (response.ok) {
 
-            // ✅ redirect to login page
+            // redirect to login page
             window.location.replace("login.html");
         } else {
             alert(data.message || "Signup failed");
@@ -182,9 +181,9 @@
     }
 }
 
-    function goToLogin(){
+function goToLogin(){
         window.location.href = 'login.html';
-    }
+}
 </script>
 </body>
 </html>
