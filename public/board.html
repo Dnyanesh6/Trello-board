@@ -88,8 +88,6 @@
     <nav class="navbar">
         <div class="left">
             <h1 onclick="location.href='dashboard.html'">🗂 Trello Board</h1>
-            <!-- <button id="orgBtn">Orgs</button> -->
-            <!-- <button id="backBtn">Back</button> -->
         </div>
         <div class="right">
             <span class="username" id="usernameDisplay"></span>
@@ -130,17 +128,10 @@
 
     <script>
 
-const orgId = new URLSearchParams(window.location.search).get("orgId");
 
-const orgBtn = document.getElementById("orgBtn");
-
-orgBtn.onclick = () => {
-    if (orgId) {
-        window.location.href = `organization.html?orgId=${orgId}`;
-    } else {
-        window.location.href = "organization.html";
-    }
-};
+async function back(){
+    window.location.href = "dashboard.html";
+}
 
 //This function is used to update the status of an issue, 
 //it sends a PUT request to the backend with the issue ID and updates the issue status based on the defined flow (To Do -> In Progress -> Done). It also handles errors and displays an alert if the update fails.

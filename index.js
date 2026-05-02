@@ -625,6 +625,7 @@ app.put('/delete-member', authMiddleware, async (req, res) => {
 
 })
 
+
 app.get('/', ( res) => {
     res.sendFile(__dirname + '/public/index.html');
 });
