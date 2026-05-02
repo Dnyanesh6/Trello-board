@@ -83,44 +83,45 @@ app.post('/signup', async (req, res) => {
 })   
 
 app.post('/signin', async (req, res) => {
-    const {username, password} = req.body;
+    const { username, password } = req.body;
 
-    if(!username ||! password){
-        res.status(401).json({
-            mesage:"Incomplete data"
-        })
-        return;
+    if (!username || !password) {
+        return res.status(400).json({
+            message: "Incomplete data"
+        });
     }
 
-    const user = await User.findOne({
-        username: username,
-    })
+    const user = await User.findOne({ username });
+
+    if (!user) {
+        return res.status(404).json({
+            message: "User not found"
+        });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
 
-    const userId = user._id;
-    if(!user || !isMatch){
-        res.status(404).json({
-            message:"User not found or invalid credentials"
-        })
-    return;
+    if (!isMatch) {
+        return res.status(401).json({
+            message: "Invalid credentials"
+        });
     }
 
-    const token = jwt.sign({username: user.username, userId: userId}, 
+    const token = jwt.sign(
+        { username: user.username, userId: user._id },
         process.env.JWT_SECRET,
-        {expiresIn: '1h'}
-    )
+        { expiresIn: '1h' }
+    );
 
     res.status(200).json({
-        message:"User signed in successfully",
-        user:{
+        message: "User signed in successfully",
+        user: {
             id: user._id,
             username: user.username,
-            token: token
+            token
         }
-    })
-})
-
+    });
+});
 
 //AUTHENTICATED-MIDDLEWARE
 //onboarding route
