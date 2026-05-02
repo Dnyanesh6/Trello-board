@@ -630,7 +630,9 @@ app.get('/', ( res) => {
     res.sendFile(__dirname + '/public/index.html');
 });
 
-app.listen(3000,()=>{
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT,()=>{
     console.log(`server is running on port ${PORT}`);
     console.log(`http://localhost:${PORT}`);
 })
