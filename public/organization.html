@@ -230,7 +230,7 @@
             const orgId = new URLSearchParams(window.location.search).get('orgId');
 
             try {
-                const response = await fetch(`http://localhost:3000/boards?orgId=${orgId}`, {
+                const response = await fetch(`${process.env.BACKEND_URL}/boards?orgId=${orgId}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -270,7 +270,7 @@
             const orgId = new URLSearchParams(window.location.search).get('orgId');
 
             try {
-                const response = await fetch(`http://localhost:3000/members?orgId=${orgId}`, {
+                const response = await fetch(`${process.env.BACKEND_URL}/members?orgId=${orgId}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -317,7 +317,7 @@
             const orgId = new URLSearchParams(window.location.search).get('orgId');
 
             try{
-                const response = await fetch(`http://localhost:3000/delete-member`, {
+                const response = await fetch(`${process.env.BACKEND_URL}/delete-member`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -361,7 +361,7 @@
             const orgId = new URLSearchParams(window.location.search).get('orgId');
 
             try {
-                const response = await fetch(`http://localhost:3000/addUserToOrganization`, {
+                const response = await fetch(`${process.env.BACKEND_URL}/addUserToOrganization`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

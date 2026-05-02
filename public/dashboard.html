@@ -132,7 +132,7 @@
 
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:3000/create-org',{
+                const response = await fetch(`${process.env.BACKEND_URL}/create-org`,{
                     method:'POST',
                     headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
                     body:JSON.stringify({orgName:orgName, description:orgDesc})
@@ -160,7 +160,7 @@
         async function loadOrganizations(){
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:3000/organizations',{
+                const response = await fetch(`${process.env.BACKEND_URL}/organizations`,{
                     headers:{'Authorization':`Bearer ${token}`}
                 });
                 const data = await response.json();

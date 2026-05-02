@@ -138,7 +138,7 @@ async function back(){
     async function updateIssue(issueId) {
         const token = localStorage.getItem("token");
         const issueID = issueId;
-        const response = await fetch(`http://localhost:3000/issues-update`,{
+        const response = await fetch(`${process.env.BACKEND_URL}/issues-update`,{
             method : "PUT",
             headers: {
                 "Content-Type": "application/json",
@@ -167,7 +167,7 @@ async function render() {
         return;
     }
 
-    const response = await fetch(`http://localhost:3000/issues?boardId=${boardId}`, {
+    const response = await fetch(`${process.env.BACKEND_URL}/issues?boardId=${boardId}`, {
         headers: { Authorization: `Bearer ${token}` }
     });
 
@@ -236,7 +236,7 @@ async function createIssue(){
 
     const boardId = new URLSearchParams(window.location.search).get("boardId");
 
-    const response = await fetch(`http://localhost:3000/issues`,{
+    const response = await fetch(`${process.env.BACKEND_URL}/issues`,{
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -282,7 +282,7 @@ window.onload = async function() {
 // This function is used to delete the issue that is in done status, it sends a DELETE request to the backend with the issue ID and removes the issue from the board if the deletion is successful. It also handles errors and displays an alert if the deletion fails.
 async function deleteIssue(issueId){
     const token = localStorage.getItem("token");
-    const response = await fetch(`http://localhost:3000/issues`,{
+    const response = await fetch(`${process.env.BACKEND_URL}/issues`,{
         method : "DELETE",
         headers: {
             "Content-Type": "application/json",
