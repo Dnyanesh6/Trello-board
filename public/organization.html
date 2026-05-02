@@ -153,6 +153,27 @@
 
 
     <script>
+        const BASE_URL = "http://localhost:3000";
+
+        window.onload = async function() {
+    const usernameDisplay = document.getElementById('usernameDisplay');
+    const token = localStorage.getItem('token');
+    if(token){
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        usernameDisplay.textContent = payload.username || 'User';
+    } else {
+        usernameDisplay.textContent = 'User';
+    }
+
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            // Load organization details and boards
+            loadOrgBoards();
+            LoadMembers();
+}
         function logout() {
             localStorage.removeItem('token');
             window.location.href = '/login.html';
@@ -201,7 +222,7 @@
             const orgId = new URLSearchParams(window.location.search).get('orgId');
 
             try {
-                const response = await fetch('http://localhost:3000/boards', {
+                const response = await fetch(`${BASE_URL}/boards`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -230,7 +251,7 @@
             const orgId = new URLSearchParams(window.location.search).get('orgId');
 
             try {
-                const response = await fetch(`${process.env.BACKEND_URL}/boards?orgId=${orgId}`, {
+                const response = await fetch(`${BASE_URL}/boards?orgId=${orgId}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -270,7 +291,7 @@
             const orgId = new URLSearchParams(window.location.search).get('orgId');
 
             try {
-                const response = await fetch(`${process.env.BACKEND_URL}/members?orgId=${orgId}`, {
+                const response = await fetch(`${BASE_URL}/members?orgId=${orgId}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -317,7 +338,7 @@
             const orgId = new URLSearchParams(window.location.search).get('orgId');
 
             try{
-                const response = await fetch(`${process.env.BACKEND_URL}/delete-member`, {
+                const response = await fetch(`${BASE_URL}/delete-member`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -338,18 +359,6 @@
             }
         }
 
-        window.onload = function() {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                window.location.href = '/login.html';
-                return;
-            }
-
-            // Load organization details and boards
-            loadOrgBoards();
-            LoadMembers();
-        }
-
         async function addMember(){
                 const memberName = document.getElementById('memberUsername').value
             if(!memberName){
@@ -361,7 +370,7 @@
             const orgId = new URLSearchParams(window.location.search).get('orgId');
 
             try {
-                const response = await fetch(`${process.env.BACKEND_URL}/addUserToOrganization`, {
+                const response = await fetch(`${BASE_URL}/addUserToOrganization`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

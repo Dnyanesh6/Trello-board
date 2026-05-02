@@ -144,7 +144,7 @@
 </div>
 
 <script>
-
+const BASE_URL = "http://localhost:3000";
 async function handleAuth() {
     const username = document.getElementById('authUsername').value;
     const password = document.getElementById('authPassword').value;
@@ -156,7 +156,7 @@ async function handleAuth() {
     }
 
     try {
-        const response = await fetch(`${process.env.BACKEND_URL}/signup`, {
+        const response = await fetch(`${BASE_URL}/signup`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"

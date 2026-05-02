@@ -94,6 +94,7 @@
     </div>
 
     <script>
+        const BASE_URL = "http://localhost:3000";
         function logout() {
             localStorage.removeItem('token');
             window.location.href = '/login.html';
@@ -132,7 +133,7 @@
 
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`${process.env.BACKEND_URL}/create-org`,{
+                const response = await fetch(`${BASE_URL}/create-org`,{
                     method:'POST',
                     headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
                     body:JSON.stringify({orgName:orgName, description:orgDesc})
@@ -160,7 +161,7 @@
         async function loadOrganizations(){
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`${process.env.BACKEND_URL}/organizations`,{
+                const response = await fetch(`${BASE_URL}/organizations`,{
                     headers:{'Authorization':`Bearer ${token}`}
                 });
                 const data = await response.json();
@@ -174,6 +175,18 @@
         window.onload = function(){
             loadOrganizations();
         }
+
+        window.onload = async function() {
+    const usernameDisplay = document.getElementById('usernameDisplay');
+    const token = localStorage.getItem('token');
+    if(token){
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        usernameDisplay.textContent = payload.username || 'User';
+    } else {
+        usernameDisplay.textContent = 'User';
+    }
+    loadOrganizations();
+}
 
         function renderOrganizations(orgs) {
         const orgGrid = document.getElementById('orgGrid');
