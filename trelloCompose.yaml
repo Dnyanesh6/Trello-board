@@ -1,0 +1,10 @@
+services:
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGO_URI=## Replace with your actual MongoDB connection string
+      - DB_NAME=
+      - PORT=3000
+      - JWT_SECRET=
