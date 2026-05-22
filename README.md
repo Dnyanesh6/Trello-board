@@ -1,7 +1,7 @@
 # 🧩 Trello Board Clone
 
 A modern project management web app inspired by Trello, built for teams to collaborate, manage issues, and track progress efficiently.
-Live URI:https://trello-board-1-f9zi.onrender.com/dashboard.html
+
 ---
 
 ## 🚀 Features
@@ -42,3 +42,5 @@ Live URI:https://trello-board-1-f9zi.onrender.com/dashboard.html
 - Authentication: JWT
 
 ---
+
+- Live URI:https://trello-board-1-f9zi.onrender.com
